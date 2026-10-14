@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f5f5;
+      padding: 0;
+    }
+
+    .header {
+      background: <?= config.color ?>;
+      color: white;
+      padding: 16px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header h2 { font-size: 18px; margin: 0; }
+    .header p  { font-size: 12px; opacity: 0.85; margin: 4px 0 0; }
+
+    .body { padding: 12px 16px; }
+
+    .summary-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .summary-chip {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: #555;
+    }
+    .summary-chip b { color: #1c4587; }
+
+    .fill-all {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .fill-btn {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: white;
+      font-size: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s;
+    }
+    .fill-btn:hover { background: #f0f4ff; border-color: <?= config.color ?>; }
+
+    .items-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .item-card {
+      background: white;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      padding: 12px;
+      transition: box-shadow 0.15s;
+    }
+    .item-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .item-card.already-issued { border-left: 3px solid #FF9800; }
+    .item-card.zero { opacity: 0.55; }
+
+    .item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+      gap: 8px;
+    }
+    .item-name { font-weight: 600; font-size: 14px; color: #222; flex: 1; }
+
+    .badges { display: flex; gap: 4px; flex-wrap: wrap; }
+    .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      white-space: nowrap;
+    }
+    .badge-ordered  { background: #e3f2fd; color: #1565c0; }
+    .badge-issued   { background: #fff3e0; color: #e65100; }
+    .badge-new      { background: #e8f5e9; color: #2e7d32; }
+
+    .item-bottom {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .item-label { font-size: 12px; color: #888; white-space: nowrap; }
+
+    .qty-control {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+    }
+    .qty-btn {
+      width: 28px; height: 28px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fafafa;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .qty-btn:hover { background: <?= config.color ?>; color: white; border-color: <?= config.color ?>; }
+
+    .qty-input {
+      width: 70px;
+      padding: 5px 8px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+    .qty-input:focus { outline: none; border-color: <?= config.color ?>; }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #999;
+    }
+    .empty-state-icon { font-size: 48px; margin-bottom: 10px; }
+
+    .footer {
+      position: sticky;
+      bottom: 0;
+      background: white;
+      border-top: 1px solid #e0e0e0;
+      padding: 12px 16px;
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      flex: 1;
+      padding: 11px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-cancel  { background: #f5f5f5; color: #666; flex: 0.6; }
+    .btn-cancel:hover { background: #e8e8e8; }
+    .btn-confirm { background: <?= config.color ?>; color: white; }
+    .btn-confirm:hover { opacity: 0.9; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #f0f0f0;
+      border-top-color: <?= config.color ?>;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast {
+      display: none;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+    .toast.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .toast.error   { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h2><?= config.icon ?> Выдача со склада</h2>
+  <p><?= config.name ?></p>
+</div>
+
+<div class="body">
+  <div id="toast" class="toast"></div>
+
+  <div id="main-content">
+    <? if (products.length === 0) { ?>
+      <div class="empty-state">
+        <div class="empty-state-icon">📭</div>
+        <p>Нет заказов для выдачи</p>
+        <p style="font-size:12px;margin-top:6px;color:#bbb">Хозяюшки ещё не подали заявки</p>
+      </div>
+    <? } else { ?>
+
+      <div class="summary-bar">
+        <div class="summary-chip">Позиций: <b><?= products.length ?></b></div>
+        <div class="summary-chip">Всего заказано: <b id="totalOrdered"><?= totalOrdered ?></b></div>
+      </div>
+
+      <div class="fill-all">
+        <button class="fill-btn" onclick="fillAll()">✓ Выдать всё как заказано</button>
+        <button class="fill-btn" onclick="clearAll()">✕ Обнулить всё</button>
+      </div>
+
+      <div class="items-list">
+        <? products.forEach(function(p, idx) { ?>
+          <div class="item-card <?= p.alreadyIssued > 0 ? 'already-issued' : '' ?>"
+               id="card_<?= idx ?>">
+            <div class="item-top">
+              <div class="item-name"><?= p.name ?></div>
+              <div class="badges">
+                <span class="badge badge-ordered">заказано: <?= p.ordered ?></span>
+                <? if (p.alreadyIssued > 0) { ?>
+                  <span class="badge badge-issued">выдано ранее: <?= p.alreadyIssued ?></span>
+                  <span class="badge badge-new">новое: <?= p.newToIssue ?></span>
+                <? } ?>
+              </div>
+            </div>
+            <div class="item-bottom">
+              <span class="item-label">Выдать сейчас:</span>
+              <div class="qty-control">
+                <button class="qty-btn" onclick="adjustQty(<?= idx ?>, -1)">−</button>
+                <input
+                  type="number"
+                  class="qty-input"
+                  id="qty_<?= idx ?>"
+                  data-name="<?= p.name ?>"
+                  data-ordered="<?= p.ordered ?>"
+                  value="<?= p.newToIssue ?>"
+                  min="0"
+                  oninput="onQtyChange(<?= idx ?>)"
+                >
+                <button class="qty-btn" onclick="adjustQty(<?= idx ?>, 1)">+</button>
+              </div>
+            </div>
+          </div>
+        <? }); ?>
+      </div>
+
+    <? } ?>
+  </div>
+
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Подтверждение выдачи...</p>
+  </div>
+</div>
+
+<div class="footer">
+  <button class="btn btn-cancel" onclick="google.script.host.close()">Отмена</button>
+  <? if (products.length > 0) { ?>
+    <button class="btn btn-confirm" id="confirmBtn" onclick="submitIssue()">
+      ✓ Подтвердить выдачу
+    </button>
+  <? } ?>
+</div>
+
+<script>
+  const warehouseType = '<?= warehouseType ?>';
+  console.log('warehouseType на старте:', warehouseType);
+
+  function adjustQty(idx, delta) {
+    const input = document.getElementById('qty_' + idx);
+    const val   = Math.max(0, (parseInt(input.value) || 0) + delta);
+    input.value = val;
+    onQtyChange(idx);
+  }
+
+  function onQtyChange(idx) {
+    const input = document.getElementById('qty_' + idx);
+    const val   = parseInt(input.value) || 0;
+    const card  = document.getElementById('card_' + idx);
+    card.classList.toggle('zero', val === 0);
+  }
+
+  function fillAll() {
+    document.querySelectorAll('.qty-input').forEach((input, idx) => {
+      input.value = input.dataset.ordered;
+      onQtyChange(idx);
+    });
+  }
+
+  function clearAll() {
+    document.querySelectorAll('.qty-input').forEach((input, idx) => {
+      input.value = 0;
+      onQtyChange(idx);
+    });
+  }
+
+  function submitIssue() {
+    const inputs   = document.querySelectorAll('.qty-input');
+    const formData = {};
+    let   hasAny   = false;
+
+    inputs.forEach(input => {
+      const qty = parseInt(input.value) || 0;
+      if (qty > 0) {
+        formData[input.dataset.name] = qty;
+        hasAny = true;
+      }
+    });
+
+    if (!hasAny) {
+      showToast('❌ Укажите количество хотя бы для одной позиции', 'error');
+      return;
+    }
+
+    document.getElementById('main-content').style.display = 'none';
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('confirmBtn').disabled = true;
+
+    google.script.run
+      .withSuccessHandler(onSuccess)
+      .withFailureHandler(onError)
+      .processIssueConfirmation(warehouseType, formData);
+  }
+
+  function onSuccess(result) {
+    if (result.success) {
+      showToast(result.message, 'success');
+      setTimeout(() => google.script.host.close(), 1800);
+    } else {
+      document.getElementById('main-content').style.display = 'block';
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('confirmBtn').disabled = false;
+      showToast(result.message, 'error');
+    }
+  }
+
+  function onError(error) {
+    document.getElementById('main-content').style.display = 'block';
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('confirmBtn').disabled = false;
+    showToast('Ошибка: ' + error.message, 'error');
+  }
+
+  function showToast(text, type) {
+    const t = document.getElementById('toast');
+    t.textContent = text;
+    t.className   = 'toast ' + type;
+    t.style.display = 'block';
+    setTimeout(() => { t.style.display = 'none'; }, 4000);
+  }
+
+  document.querySelectorAll('.qty-input').forEach((input, idx) => {
+    if ((parseInt(input.value) || 0) === 0) {
+      document.getElementById('card_' + idx).classList.add('zero');
+    }
+  });
+</script>
+</body>
+</html>
