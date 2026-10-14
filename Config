@@ -56,9 +56,10 @@ const WAREHOUSE_CONFIG = {
 };
 
 
+// name — геттер: переводится в момент обращения (L нельзя вызывать при загрузке файла)
 const WAREHOUSE_TYPES = Object.keys(WAREHOUSE_CONFIG).reduce((acc, key) => {
   const c = WAREHOUSE_CONFIG[key];
-  acc[key] = { name: c.name, color: c.color, icon: c.icon };
+  acc[key] = { get name() { return L(c.name); }, color: c.color, icon: c.icon };
   return acc;
 }, {});
 
@@ -81,7 +82,7 @@ const FORM_SHEET_TO_DASHBOARD = (function() {
 
 function getWarehouseConfigByType(warehouseType) {
   const cfg = WAREHOUSE_CONFIG[warehouseType];
-  if (!cfg) throw new Error('Неизвестный тип склада: ' + warehouseType);
+  if (!cfg) throw new Error(L('Неизвестный тип склада: ') + warehouseType);
   return cfg;
 }
 
@@ -94,7 +95,7 @@ const PRODUCT_CATEGORIES_LIST = [
 ];
 
 function getProductCategoriesList() {
-  return PRODUCT_CATEGORIES_LIST;
+  return PRODUCT_CATEGORIES_LIST.map(L);
 }
 
 const DEFAULT_UNITS = ['кг', 'штука', 'упаковка', 'блок', 'л', 'мл', 'г', 'пакет'];
@@ -104,12 +105,12 @@ function getUnits() {
   try {
     const saved  = PropertiesService.getScriptProperties().getProperty(PROP_UNITS);
     const custom = saved ? JSON.parse(saved) : [];
-    const all    = [...DEFAULT_UNITS];
+    const all    = DEFAULT_UNITS.map(L);
     custom.forEach(u => { if (u && !all.includes(u)) all.push(u); });
     return all;
   } catch(e) {
     Logger.log('⚠️ getUnits: ' + e.toString());
-    return DEFAULT_UNITS;
+    return DEFAULT_UNITS.map(L);
   }
 }
 
@@ -139,7 +140,7 @@ function getWeekPeriodFromMenu(menuSheet) {
   try {
     if (menuSheet) {
       var v = menuSheet.getRange('A1').getValue().toString();
-      var m = v.match(/с\s+(\d{2}\.\d{2})\s+по\s+(\d{2}\.\d{2})/i);
+      var m = v.match(/(?:с|from)\s+(\d{2}\.\d{2})\s+(?:по|to)\s+(\d{2}\.\d{2})/i);
       if (m) return m[1] + ' - ' + m[2];
     }
   } catch(e) {}

@@ -2,22 +2,22 @@
 
 function openMenuConstructor() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const warehouseSheet = ss.getSheetByName('Склад_Продукты');
+  const warehouseSheet = SH_(ss, L('Склад_Продукты'));
   if (!warehouseSheet) {
-    SpreadsheetApp.getUi().alert('❌ Сначала создайте склад продуктов!');
+    SpreadsheetApp.getUi().alert(L('❌ Сначала создайте склад продуктов!'));
     return;
   }
   const categories = getWarehouseCategories(warehouseSheet);
   if (categories.length === 0) {
-    SpreadsheetApp.getUi().alert('⚠️ На складе нет категорий. Пересоздайте склад.');
+    SpreadsheetApp.getUi().alert(L('⚠️ На складе нет категорий. Пересоздайте склад.'));
     return;
   }
-  const html = HtmlService.createTemplateFromFile('ConstructorDialog')
+  const html = htmlTemplate_('ConstructorDialog')
     .evaluate()
     .setWidth(950)
     .setHeight(750)
-    .setTitle('Конструктор меню');
-  SpreadsheetApp.getUi().showModalDialog(html, 'Конструктор меню');
+    .setTitle(L('Конструктор меню'));
+  SpreadsheetApp.getUi().showModalDialog(html, L('Конструктор меню'));
 }
 
 function getWarehouseCategories(warehouseSheet) {
@@ -34,7 +34,7 @@ function getWarehouseCategories(warehouseSheet) {
 function getCategoryProducts(categoryName) {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const warehouseSheet = ss.getSheetByName('Склад_Продукты');
+    const warehouseSheet = SH_(ss, L('Склад_Продукты'));
     if (!warehouseSheet) return [];
     const data = warehouseSheet.getDataRange().getValues();
     const products = [];
@@ -59,7 +59,7 @@ function getCategoryProducts(categoryName) {
 
 function getMenuConstructorData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const warehouseSheet = ss.getSheetByName('Склад_Продукты');
+  const warehouseSheet = SH_(ss, L('Склад_Продукты'));
   const categories = warehouseSheet ? getWarehouseCategories(warehouseSheet) : [];
   const config = loadMenuConfig();
   return { categories: categories, config: config };
@@ -116,10 +116,10 @@ function fixMenuConfig() {
   Logger.log('alwaysOn: ' + JSON.stringify(config.alwaysOn, null, 2));
 
   SpreadsheetApp.getUi().alert(
-    '✅ Конфиг исправлен!\n\n' +
-    'Категорий: ' + config.rotatingCategories.length + '\n' +
-    'Таймингов: ' + config.timings.length + '\n' +
-    'Круглосуточно: ' + config.alwaysOn.length + '\n\n' +
-    'Откройте конструктор заново.'
+    L('✅ Конфиг исправлен!\n\n') +
+    L('Категорий: ') + config.rotatingCategories.length + '\n' +
+    L('Таймингов: ') + config.timings.length + '\n' +
+    L('Круглосуточно: ') + config.alwaysOn.length + '\n\n' +
+    L('Откройте конструктор заново.')
   );
 }

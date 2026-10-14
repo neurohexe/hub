@@ -6,8 +6,8 @@ function swRefreshDashboard(warehouseType) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const coffeePoints = BaseInfo.getActiveCoffeePoints();
     const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM.yyyy');
-    let dash = ss.getSheetByName(cfg.dashSheet);
-    if (!dash) dash = ss.insertSheet(cfg.dashSheet);
+    let dash = SH_(ss, cfg.dashSheet);
+    if (!dash) dash = ss.insertSheet(L(cfg.dashSheet));
     const hostessData  = _swReadResponseSheet(ss, cfg.hostessSheet, today);
     const deliveryData = _swReadDeliverySheet(ss, cfg.logistSheet, today);
     const isFreshToday = _isDashboardForToday(dash, today);
@@ -21,7 +21,7 @@ function swRefreshDashboard(warehouseType) {
 }
 
 function _swReadResponseSheet(ss, sheetName, todayStr) {
-  const result = {}, sheet = ss.getSheetByName(sheetName);
+  const result = {}, sheet = SH_(ss, sheetName);
   if (!sheet) return result;
   const data = sheet.getDataRange().getValues(), headers = data[0];
   for (let i = 1; i < data.length; i++) {
@@ -29,7 +29,7 @@ function _swReadResponseSheet(ss, sheetName, todayStr) {
     let d;
     try { d = Utilities.formatDate(new Date(ts), Session.getScriptTimeZone(), 'dd.MM.yyyy'); } catch(e) { continue; }
     if (d !== todayStr) continue;
-    const cpName = data[i][1] ? data[i][1].toString().trim() : 'КП';
+    const cpName = data[i][1] ? data[i][1].toString().trim() : L('КП');
     if (!result[cpName]) result[cpName] = {};
     for (let col = 2; col < headers.length; col++) {
       const p = headers[col] ? headers[col].toString().trim() : '';
@@ -43,7 +43,7 @@ function _swReadResponseSheet(ss, sheetName, todayStr) {
 }
 
 function _swReadDeliverySheet(ss, sheetName, todayStr) {
-  const result = {}, sheet = ss.getSheetByName(sheetName);
+  const result = {}, sheet = SH_(ss, sheetName);
   if (!sheet) return result;
   const data = sheet.getDataRange().getValues(), headers = data[0];
   for (let i = 1; i < data.length; i++) {
@@ -68,7 +68,7 @@ function _swReadIssuedFromDash(dash) {
   const headers = data[1];
   let idx = -1;
   for (let c = 0; c < headers.length; c++) {
-    if (headers[c] && headers[c].toString().trim().toUpperCase() === 'ВЫДАНО') { idx = c; break; }
+    if (headers[c] && K(headers[c]).toUpperCase() === 'ВЫДАНО') { idx = c; break; }
   }
   if (idx === -1) return result;
   for (let i = 2; i < data.length; i++) {
@@ -83,7 +83,7 @@ function _swReadIssuedFromDash(dash) {
 }
 
 function _swReadStockFromWarehouse(ss, sheetName) {
-  const result = {}, sheet = ss.getSheetByName(sheetName);
+  const result = {}, sheet = SH_(ss, sheetName);
   if (!sheet) return result;
   const data = sheet.getDataRange().getValues();
   for (let i = 2; i < data.length; i++) {
@@ -118,9 +118,9 @@ function _swBuildDashboard(dash, cfg, coffeePoints, hostessData, deliveryData, i
     .setHorizontalAlignment('center').setVerticalAlignment('middle');
   dash.setRowHeight(1, 32);
 
-  const hv = ['Товар'];
+  const hv = [L('Товар')];
   coffeePoints.forEach(cp => hv.push(cp.name));
-  hv.push('ИТОГО', 'ВЫДАНО', 'Поставка', 'Остаток на складе');
+  hv.push(L('ИТОГО'), L('ВЫДАНО'), L('Поставка'), L('Остаток на складе'));
   dash.getRange(2, 1, 1, totalCols)
     .setValues([hv])
     .setFontWeight('bold').setFontColor('#ffffff')
@@ -139,7 +139,7 @@ function _swBuildDashboard(dash, cfg, coffeePoints, hostessData, deliveryData, i
   if (products.length === 0) {
     dash.getRange(3, 1, 1, totalCols).merge();
     dash.getRange(3, 1)
-      .setValue('Заказов за сегодня ещё нет')
+      .setValue(L('Заказов за сегодня ещё нет'))
       .setFontColor('#999').setFontStyle('italic').setHorizontalAlignment('center');
   } else {
     const rd = products.map(product => {

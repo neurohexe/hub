@@ -18,9 +18,9 @@ const PD = {
 };
 
 function getOrCreateDashSheet(ss) {
-  let sheet = ss.getSheetByName(PD.SHEET_NAME);
+  let sheet = SH_(ss, PD.SHEET_NAME);
   if (!sheet) {
-    sheet = ss.insertSheet(PD.SHEET_NAME);
+    sheet = ss.insertSheet(L(PD.SHEET_NAME));
     Logger.log('✓ Создан лист "Продукты"');
   }
   return sheet;
@@ -42,9 +42,9 @@ function drawEmptyDashboard(sheet, coffeePoints, todayStr) {
     .setVerticalAlignment('middle');
   sheet.setRowHeight(PD.DATE_ROW, 32);
 
-  const headerValues = ['Кофе-поинт:'];
+  const headerValues = [L('Кофе-поинт:')];
   coffeePoints.forEach(cp => headerValues.push(cp.name));
-  headerValues.push('ИТОГО', 'ВЫДАНО', 'Поставка', 'Остаток на складе');
+  headerValues.push(L('ИТОГО'), L('ВЫДАНО'), L('Поставка'), L('Остаток на складе'));
 
   const headerRange = sheet.getRange(PD.HEADER_ROW, 1, 1, totalCols);
   headerRange.setValues([headerValues])
@@ -64,7 +64,7 @@ function drawEmptyDashboard(sheet, coffeePoints, todayStr) {
 
   sheet.getRange(PD.DATA_START_ROW, 1, 1, totalCols).merge();
   sheet.getRange(PD.DATA_START_ROW, 1)
-    .setValue('Данные появятся после первых заказов')
+    .setValue(L('Данные появятся после первых заказов'))
     .setFontColor('#999999')
     .setFontStyle('italic')
     .setHorizontalAlignment('center');
@@ -81,8 +81,8 @@ function refreshProductsDashboard() {
   try {
     const ss             = SpreadsheetApp.getActiveSpreadsheet();
     const dashSheet      = getOrCreateDashSheet(ss);
-    const hostessSheet   = ss.getSheetByName(PD.HOSTESS_SHEET);
-    const warehouseSheet = ss.getSheetByName(PD.WAREHOUSE_SHEET);
+    const hostessSheet   = SH_(ss, PD.HOSTESS_SHEET);
+    const warehouseSheet = SH_(ss, PD.WAREHOUSE_SHEET);
 
     const todayStr     = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM.yyyy');
     const coffeePoints = BaseInfo.getActiveCoffeePoints();
@@ -186,7 +186,7 @@ function readStockFromWarehouse(sheet) {
 function readTodayDelivery(ss, todayStr) {
   const result = {};
 
-  const deliverySheet = ss.getSheetByName(PD.DELIVERY_SHEET);
+  const deliverySheet = SH_(ss, PD.DELIVERY_SHEET);
   if (!deliverySheet) return result;
 
   const data    = deliverySheet.getDataRange().getValues();
@@ -223,7 +223,7 @@ function readCurrentIssued(dashSheet) {
   const headers    = data[PD.HEADER_ROW - 1];
   let issuedColIdx = -1;
   for (let c = 0; c < headers.length; c++) {
-    if (headers[c] && headers[c].toString().trim().toUpperCase() === 'ВЫДАНО') {
+    if (headers[c] && K(headers[c]).toUpperCase() === 'ВЫДАНО') {
       issuedColIdx = c; break;
     }
   }

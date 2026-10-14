@@ -2,12 +2,12 @@
 
 function _getOrCreateHubTargetsSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(HUB_TARGETS_SHEET);
+  let sheet = SH_(ss, HUB_TARGETS_SHEET);
   if (sheet) return sheet;
 
-  sheet = ss.insertSheet(HUB_TARGETS_SHEET);
+  sheet = ss.insertSheet(L(HUB_TARGETS_SHEET));
   sheet.getRange(1, 1, 1, 6).setValues([[
-    'Товар', 'Категория', 'Целевой остаток', 'Предложение (авто)', 'Источник', 'Обновлено'
+    L('Товар'), L('Категория'), L('Целевой остаток'), L('Предложение (авто)'), L('Источник'), L('Обновлено')
   ]]).setBackground('#6a329f').setFontColor('#ffffff').setFontWeight('bold');
   sheet.setFrozenRows(1);
   sheet.setColumnWidth(1, 260); sheet.setColumnWidth(2, 160);
@@ -34,7 +34,7 @@ function syncHubTargetsSheet() {
     row++; added++;
   });
 
-  SpreadsheetApp.getUi().alert('✅ Целевые остатки синхронизированы.\nДобавлено новых товаров: ' + added);
+  SpreadsheetApp.getUi().alert(L('✅ Целевые остатки синхронизированы.\nДобавлено новых товаров: ') + added);
   return added;
 }
 
@@ -79,9 +79,9 @@ function suggestHubTargets(weeksWindow, safetyFactor) {
   }
 
   SpreadsheetApp.getUi().alert(
-    'Предложения обновлены для ' + updated + ' товаров.\n\n' +
-    'Это только рекомендация — чтобы применить, скопируйте значение\n' +
-    'из колонки "Предложение (авто)" в колонку "Целевой остаток".'
+    L('Предложения обновлены для ') + updated + L(' товаров.\n\n') +
+    L('Это только рекомендация — чтобы применить, скопируйте значение\n') +
+    L('из колонки "Предложение (авто)" в колонку "Целевой остаток".')
   );
   return updated;
 }
@@ -89,7 +89,7 @@ function suggestHubTargets(weeksWindow, safetyFactor) {
 // Читает лист истории остатков и возвращает { товар: [расход1, расход2, ...] } по датам.
 function _readHubHistory() {
   const ss     = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet  = ss.getSheetByName(HUB_HISTORY_SHEET);
+  const sheet  = SH_(ss, HUB_HISTORY_SHEET);
   const result = {};
   if (!sheet) return result;
 

@@ -3,7 +3,7 @@
 const AddProductButton = (function() {
 
   function isExtendedSheet(sheet) {
-    const name = sheet.getName();
+    const name = K(sheet.getName());
     return name === 'Склад_Хозтовары' || name === 'Склад_Канцелярия';
   }
 
@@ -98,7 +98,7 @@ const AddProductButton = (function() {
     sheet.getRange(row, 1, 1, dataCols).clearContent().clearFormat();
 
     sheet.getRange(row, 2).setValue(0);
-    sheet.getRange(row, 3).setValue('штука').setDataValidation(getUnitsValidation());
+    sheet.getRange(row, 3).setValue(L('штука')).setDataValidation(getUnitsValidation());
     sheet.getRange(row, 4).insertCheckboxes().check();
 
     const suppRule = getSuppliersValidation();
@@ -149,8 +149,8 @@ const AddProductButton = (function() {
     const ui    = SpreadsheetApp.getUi();
     const sheet = SpreadsheetApp.getActiveSheet();
 
-    if (!sheet.getName().startsWith('Склад_')) {
-      ui.alert('❌ Только для листов склада');
+    if (!isWarehouseSheet_(sheet)) {
+      ui.alert(L('❌ Только для листов склада'));
       return;
     }
 
@@ -159,23 +159,23 @@ const AddProductButton = (function() {
 
 
     const nameRes = ui.prompt(
-      '📁 Новая категория',
-      'Название категории:',
+      L('📁 Новая категория'),
+      L('Название категории:'),
       ui.ButtonSet.OK_CANCEL
     );
     if (nameRes.getSelectedButton() !== ui.Button.OK) return;
     const catName = nameRes.getResponseText().trim();
-    if (!catName) { ui.alert('❌ Название не может быть пустым'); return; }
+    if (!catName) { ui.alert(L('❌ Название не может быть пустым')); return; }
 
     const categories = getCategories(sheet);
     if (categories.some(c => c.name.toLowerCase() === catName.toLowerCase())) {
-      ui.alert(`❌ Категория "${catName}" уже существует`);
+      ui.alert(L('❌ Категория "') + catName + L('" уже существует'));
       return;
     }
    
     const posRes = ui.alert(
-      '📍 Позиция категории',
-      `Добавить "${catName}" в конец склада?`,
+      L('📍 Позиция категории'),
+      L('Добавить "') + catName + L('" в конец склада?'),
       ui.ButtonSet.YES_NO
     );
 
@@ -197,10 +197,10 @@ const AddProductButton = (function() {
     
         const catList = categories.map((c, i) => `${i + 1}. ${c.name}`).join('\n');
         const choiceRes = ui.prompt(
-          '📍 Выберите позицию',
-          'Вставить ПЕРЕД какой категорией?\n\n' +
+          L('📍 Выберите позицию'),
+          L('Вставить ПЕРЕД какой категорией?\n\n') +
           catList + '\n\n' +
-          'Введите номер\n(пусто = в самый конец):',
+          L('Введите номер\n(пусто = в самый конец):'),
           ui.ButtonSet.OK_CANCEL
         );
         if (choiceRes.getSelectedButton() !== ui.Button.OK) return;
@@ -215,8 +215,8 @@ const AddProductButton = (function() {
           const choiceIdx = parseInt(choiceText) - 1;
           if (isNaN(choiceIdx) || choiceIdx < 0 || choiceIdx >= categories.length) {
             ui.alert(
-              '❌ Неверный номер.\n\n' +
-              'Введите число от 1 до ' + categories.length
+              L('❌ Неверный номер.\n\n') +
+              L('Введите число от 1 до ') + categories.length
             );
             return;
           }
@@ -230,7 +230,7 @@ const AddProductButton = (function() {
     _drawCategoryRow(sheet, insertRow,     catName,  dataCols);
     _drawProductRow (sheet, insertRow + 1, dataCols, extended);
 
-    ui.alert(`✅ Категория "${catName}" добавлена!`);
+    ui.alert(L('✅ Категория "') + catName + L('" добавлена!'));
     sheet.getRange(insertRow + 1, 1).activate();
   }
 
@@ -238,33 +238,33 @@ const AddProductButton = (function() {
     const ui    = SpreadsheetApp.getUi();
     const sheet = SpreadsheetApp.getActiveSheet();
 
-    if (!sheet.getName().startsWith('Склад_')) {
-      ui.alert('❌ Только для складов');
+    if (!isWarehouseSheet_(sheet)) {
+      ui.alert(L('❌ Только для складов'));
       return;
     }
 
     const row = sheet.getActiveCell().getRow();
     if (row < 3) {
-      ui.alert('❌ Выберите строку внутри категории (или на строке категории)');
+      ui.alert(L('❌ Выберите строку внутри категории (или на строке категории)'));
       return;
     }
 
     const cntRes = ui.prompt(
-      '📦 Добавление строк',
-      'Сколько строк добавить? (1–50)',
+      L('📦 Добавление строк'),
+      L('Сколько строк добавить? (1–50)'),
       ui.ButtonSet.OK_CANCEL
     );
     if (cntRes.getSelectedButton() !== ui.Button.OK) return;
 
     const count = parseInt(cntRes.getResponseText());
     if (isNaN(count) || count < 1 || count > 50) {
-      ui.alert('❌ Введите число от 1 до 50');
+      ui.alert(L('❌ Введите число от 1 до 50'));
       return;
     }
 
     const category = findCategoryForRow(sheet, row);
     if (!category) {
-      ui.alert('❌ Не удалось определить категорию.\n\nВыберите строку внутри нужной категории.');
+      ui.alert(L('❌ Не удалось определить категорию.\n\nВыберите строку внутри нужной категории.'));
       return;
     }
 
@@ -272,15 +272,15 @@ const AddProductButton = (function() {
       addProductToCategory(sheet, category);
     }
 
-    ui.alert(`✅ Добавлено ${count} строк в категорию "${category.name}"`);
+    ui.alert(L('✅ Добавлено ') + count + L(' строк в категорию "') + category.name + '"');
   }
 
   function repairWarehouseRows() {
     const ui    = SpreadsheetApp.getUi();
     const sheet = SpreadsheetApp.getActiveSheet();
 
-    if (!sheet.getName().startsWith('Склад_')) {
-      ui.alert('❌ Только для листов склада');
+    if (!isWarehouseSheet_(sheet)) {
+      ui.alert(L('❌ Только для листов склада'));
       return;
     }
 
@@ -321,7 +321,7 @@ const AddProductButton = (function() {
       const unitCell = sheet.getRange(rowNum, 3);
       unitCell.setDataValidation(unitRule);
       if (data[i][2] === '' || data[i][2] === null) {
-        unitCell.setValue('штука');
+        unitCell.setValue(L('штука'));
         changed = true;
       }
 
@@ -369,12 +369,12 @@ const AddProductButton = (function() {
     SpreadsheetApp.flush();
 
     ui.alert(
-      '✅ Готово!\n\n' +
-      'Проверено строк-товаров: ' + checkedRows + '\n' +
-      'Дозаполнено значений по умолчанию: ' + fixedCount + '\n' +
-      'Снято чередующихся цветов (banding): ' + bandingsRemoved + '\n\n' +
-      'Чекбоксы, единицы измерения и список поставщиков\n' +
-      'пересозданы для всех строк на этом складе.'
+      L('✅ Готово!\n\n') +
+      L('Проверено строк-товаров: ') + checkedRows + '\n' +
+      L('Дозаполнено значений по умолчанию: ') + fixedCount + '\n' +
+      L('Снято чередующихся цветов (banding): ') + bandingsRemoved + '\n\n' +
+      L('Чекбоксы, единицы измерения и список поставщиков\n') +
+      L('пересозданы для всех строк на этом складе.')
     );
   }
 
@@ -382,13 +382,13 @@ const AddProductButton = (function() {
   function createButtons(warehouseType) {
     const sheetName = WAREHOUSE_SHEET_NAMES[warehouseType];
     if (!sheetName) {
-      SpreadsheetApp.getUi().alert(`❌ Неизвестный тип склада: ${warehouseType}`);
+      SpreadsheetApp.getUi().alert(L('❌ Неизвестный тип склада: ') + warehouseType);
       return;
     }
 
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+    const sheet = SH_(SpreadsheetApp.getActiveSpreadsheet(), sheetName);
     if (!sheet) {
-      SpreadsheetApp.getUi().alert(`❌ Лист ${sheetName} не найден`);
+      SpreadsheetApp.getUi().alert(L('❌ Лист ') + L(sheetName) + L(' не найден'));
       return;
     }
 
@@ -406,18 +406,18 @@ const AddProductButton = (function() {
         .setVerticalAlignment('middle');
     });
 
-    SpreadsheetApp.getUi().alert(`✅ Кнопки созданы для ${WAREHOUSE_TYPES[warehouseType].name}`);
+    SpreadsheetApp.getUi().alert(L('✅ Кнопки созданы для ') + WAREHOUSE_TYPES[warehouseType].name);
   }
 
   function handleButtonClick(row) {
     const sheet = SpreadsheetApp.getActiveSheet();
     const cat   = findCategoryForRow(sheet, row);
     if (!cat) {
-      SpreadsheetApp.getUi().alert('❌ Не удалось определить категорию');
+      SpreadsheetApp.getUi().alert(L('❌ Не удалось определить категорию'));
       return;
     }
     addProductToCategory(sheet, cat);
-    SpreadsheetApp.getUi().alert(`✅ Строка добавлена в "${cat.name}"`);
+    SpreadsheetApp.getUi().alert(L('✅ Строка добавлена в "') + cat.name + '"');
   }
 
   return {

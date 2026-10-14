@@ -14,9 +14,9 @@ function openBulkImportDialog() {
 
   if (!PropertiesService.getScriptProperties().getProperty(BULK_IMPORT_API_KEY_PROP)) {
     const res = ui.alert(
-      'AI-классификатор не настроен',
-      'Чтобы автоматически распределять товары по складам и категориям,\n' +
-      'нужен ключ Google Gemini API.\n\nНастроить сейчас?',
+      L('AI-классификатор не настроен'),
+      L('Чтобы автоматически распределять товары по складам и категориям,\n') +
+      L('нужен ключ Google Gemini API.\n\nНастроить сейчас?'),
       ui.ButtonSet.YES_NO
     );
     if (res !== ui.Button.YES) return;
@@ -24,27 +24,27 @@ function openBulkImportDialog() {
     if (!PropertiesService.getScriptProperties().getProperty(BULK_IMPORT_API_KEY_PROP)) return;
   }
 
-  const html = HtmlService.createHtmlOutputFromFile('BulkImportDialog')
+  const html = htmlTemplate_('BulkImportDialog').evaluate()
     .setWidth(560).setHeight(600);
-  ui.showModalDialog(html, '📋 Массовое добавление ассортимента');
+  ui.showModalDialog(html, L('📋 Массовое добавление ассортимента'));
 }
 
 function connectAIClassifierKey() {
   const ui = SpreadsheetApp.getUi();
   const res = ui.prompt(
-    '🤖 Подключение AI-классификатора',
-    'Вставьте ключ Google Gemini API (начинается с "AIza...").\n\n' +
-    'Получить ключ: aistudio.google.com → Get API key\n' +
-    '(бесплатно, карта не нужна — есть бесплатный лимит запросов в день)\n\n' +
-    'Ключ используется только для распределения товаров\n' +
-    'по складам и категориям при массовой вставке ассортимента.',
+    L('🤖 Подключение AI-классификатора'),
+    L('Вставьте ключ Google Gemini API (начинается с "AIza...").\n\n') +
+    L('Получить ключ: aistudio.google.com → Get API key\n') +
+    L('(бесплатно, карта не нужна — есть бесплатный лимит запросов в день)\n\n') +
+    L('Ключ используется только для распределения товаров\n') +
+    L('по складам и категориям при массовой вставке ассортимента.'),
     ui.ButtonSet.OK_CANCEL
   );
   if (res.getSelectedButton() !== ui.Button.OK) return;
   const key = res.getResponseText().trim();
-  if (!key) { ui.alert('❌ Ключ не может быть пустым'); return; }
+  if (!key) { ui.alert(L('❌ Ключ не может быть пустым')); return; }
   PropertiesService.getScriptProperties().setProperty(BULK_IMPORT_API_KEY_PROP, key);
-  ui.alert('✅ Ключ сохранён.');
+  ui.alert(L('✅ Ключ сохранён.'));
 }
 
 // Вызывается из BulkImportDialog.html через google.script.run.
@@ -52,12 +52,12 @@ function connectAIClassifierKey() {
 function processBulkAssortmentImport(rawText) {
   const parsed = _parseBulkAssortmentText(rawText);
   if (parsed.length === 0) {
-    throw new Error('Список пуст — не удалось распознать ни одной строки.');
+    throw new Error(L('Список пуст — не удалось распознать ни одной строки.'));
   }
   if (parsed.length > BULK_IMPORT_MAX_ITEMS) {
     throw new Error(
-      'Слишком много позиций за один раз (' + parsed.length + ').\n' +
-      'Разбейте на части по ' + BULK_IMPORT_MAX_ITEMS + ' штук и вставляйте по очереди.'
+      L('Слишком много позиций за один раз (') + parsed.length + ').\n' +
+      L('Разбейте на части по ') + BULK_IMPORT_MAX_ITEMS + L(' штук и вставляйте по очереди.')
     );
   }
 
@@ -102,9 +102,9 @@ function _getWarehouseCategoriesSnapshot() {
   const snapshot = {};
   Object.keys(WAREHOUSE_CONFIG).forEach(key => {
     const cfg   = WAREHOUSE_CONFIG[key];
-    const sheet = ss.getSheetByName(cfg.warehouseSheet);
+    const sheet = SH_(ss, cfg.warehouseSheet);
     snapshot[key] = {
-      name:       cfg.name,
+      name:       L(cfg.name),
       exists:     !!sheet,
       categories: sheet ? AddProductButton.getCategories(sheet).map(c => c.name) : []
     };
@@ -115,7 +115,7 @@ function _getWarehouseCategoriesSnapshot() {
 function _classifyProductsWithAI(products, snapshot) {
   const apiKey = PropertiesService.getScriptProperties().getProperty(BULK_IMPORT_API_KEY_PROP);
   if (!apiKey) {
-    throw new Error('Не настроен ключ AI (Gemini). ⚙️ Настройки → AI → Подключить AI-классификатор');
+    throw new Error(L('Не настроен ключ AI (Gemini). ⚙️ Настройки → AI → Подключить AI-классификатор'));
   }
   const model = PropertiesService.getScriptProperties().getProperty(BULK_IMPORT_MODEL_PROP)
     || BULK_IMPORT_DEFAULT_MODEL;
@@ -123,28 +123,28 @@ function _classifyProductsWithAI(products, snapshot) {
   const warehouseTypes = Object.keys(snapshot);
   const warehouseDescriptions = warehouseTypes.map(key => {
     const w = snapshot[key];
-    return key + ' ("' + w.name + '")' + (w.exists ? '' : ' [склад ещё не создан]') +
-      ' — существующие категории: ' + (w.categories.length ? w.categories.join('; ') : '(пока ни одной)');
+    return key + ' ("' + w.name + '")' + (w.exists ? '' : L(' [склад ещё не создан]')) +
+      L(' — существующие категории: ') + (w.categories.length ? w.categories.join('; ') : L('(пока ни одной)'));
   }).join('\n');
 
   const productLines = products.map((p, i) => (i + 1) + '. ' + p.name +
-    (p.unit ? ' (ед. изм.: ' + p.unit + ')' : '') +
-    (p.supplier ? ' (поставщик: ' + p.supplier + ')' : '')
+    (p.unit ? L(' (ед. изм.: ') + p.unit + ')' : '') +
+    (p.supplier ? L(' (поставщик: ') + p.supplier + ')' : '')
   ).join('\n');
 
   const prompt =
-    'Ты помогаешь разложить список товаров склада по 4 складам и категориям внутри каждого склада.\n\n' +
-    'СКЛАДЫ И ИХ СУЩЕСТВУЮЩИЕ КАТЕГОРИИ:\n' + warehouseDescriptions + '\n\n' +
-    'ТОВАРЫ ДЛЯ РАСПРЕДЕЛЕНИЯ (' + products.length + ' шт.):\n' + productLines + '\n\n' +
-    'Для каждого товара определи:\n' +
-    '- warehouseType: один из [' + warehouseTypes.join(', ') + ']\n' +
-    '- category: если товар подходит под уже существующую категорию этого склада — ' +
-    'используй её название ТОЧНО как в списке выше (посимвольно). Если ни одна не подходит — ' +
-    'придумай короткое точное название новой категории на русском (в том же стиле, что и существующие).\n' +
-    '- isNewCategory: true, если категории с таким названием ещё нет в списке существующих для этого склада.\n\n' +
-    'Верни РОВНО ' + products.length + ' объектов, СТРОГО в том же порядке, что и список товаров выше, ' +
-    'даже если не до конца уверен — в этом случае выбери наиболее вероятный вариант.\n\n' +
-    'Ответь ТОЛЬКО JSON-массивом, без пояснений и без markdown-разметки (без \`\`\`):\n' +
+    L('Ты помогаешь разложить список товаров склада по 4 складам и категориям внутри каждого склада.\n\n') +
+    L('СКЛАДЫ И ИХ СУЩЕСТВУЮЩИЕ КАТЕГОРИИ:\n') + warehouseDescriptions + '\n\n' +
+    L('ТОВАРЫ ДЛЯ РАСПРЕДЕЛЕНИЯ (') + products.length + L(' шт.):\n') + productLines + '\n\n' +
+    L('Для каждого товара определи:\n') +
+    L('- warehouseType: один из [') + warehouseTypes.join(', ') + ']\n' +
+    L('- category: если товар подходит под уже существующую категорию этого склада — ') +
+    L('используй её название ТОЧНО как в списке выше (посимвольно). Если ни одна не подходит — ') +
+    L('придумай короткое точное название новой категории на русском (в том же стиле, что и существующие).\n') +
+    L('- isNewCategory: true, если категории с таким названием ещё нет в списке существующих для этого склада.\n\n') +
+    L('Верни РОВНО ') + products.length + L(' объектов, СТРОГО в том же порядке, что и список товаров выше, ') +
+    L('даже если не до конца уверен — в этом случае выбери наиболее вероятный вариант.\n\n') +
+    L('Ответь ТОЛЬКО JSON-массивом, без пояснений и без markdown-разметки (без \`\`\`):\n') +
     '[{"name":"...", "warehouseType":"...", "category":"...", "isNewCategory":true}, ...]';
 
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model +
@@ -166,7 +166,7 @@ function _classifyProductsWithAI(products, snapshot) {
 
   let result;
   try { result = JSON.parse(response.getContentText()); }
-  catch(e) { throw new Error('AI вернул нераспознаваемый ответ (код ' + response.getResponseCode() + ')'); }
+  catch(e) { throw new Error(L('AI вернул нераспознаваемый ответ (код ') + response.getResponseCode() + ')'); }
 
   if (result.error) throw new Error('AI: ' + (result.error.message || JSON.stringify(result.error)));
 
@@ -177,15 +177,15 @@ function _classifyProductsWithAI(products, snapshot) {
   if (!jsonMatch) {
     const finishReason = (candidate && candidate.finishReason) || '?';
     throw new Error(
-      'AI вернул неожиданный ответ (finishReason=' + finishReason + '): ' + text.substring(0, 300)
+      L('AI вернул неожиданный ответ (finishReason=') + finishReason + '): ' + text.substring(0, 300)
     );
   }
 
   let parsedJson;
   try { parsedJson = JSON.parse(jsonMatch[0]); }
-  catch(e) { throw new Error('Не удалось разобрать JSON от AI: ' + e.toString()); }
+  catch(e) { throw new Error(L('Не удалось разобрать JSON от AI: ') + e.toString()); }
 
-  if (!Array.isArray(parsedJson)) throw new Error('AI вернул не массив');
+  if (!Array.isArray(parsedJson)) throw new Error(L('AI вернул не массив'));
   return parsedJson;
 }
 
@@ -219,7 +219,7 @@ function _insertClassifiedProducts(items) {
   const byWarehouse = {};
   items.forEach(item => {
     if (!item.matched || !WAREHOUSE_CONFIG[item.warehouseType]) {
-      report.skipped.push({ name: item.name, reason: 'AI не смог классифицировать' });
+      report.skipped.push({ name: item.name, reason: L('AI не смог классифицировать') });
       return;
     }
     if (!byWarehouse[item.warehouseType]) byWarehouse[item.warehouseType] = [];
@@ -228,11 +228,11 @@ function _insertClassifiedProducts(items) {
 
   Object.keys(byWarehouse).forEach(warehouseType => {
     const cfg   = WAREHOUSE_CONFIG[warehouseType];
-    const sheet = ss.getSheetByName(cfg.warehouseSheet);
+    const sheet = SH_(ss, cfg.warehouseSheet);
 
     if (!sheet) {
       byWarehouse[warehouseType].forEach(item =>
-        report.skipped.push({ name: item.name, reason: 'склад "' + cfg.name + '" ещё не создан' })
+        report.skipped.push({ name: item.name, reason: L('склад "') + L(cfg.name) + L('" ещё не создан') })
       );
       return;
     }
@@ -245,7 +245,7 @@ function _insertClassifiedProducts(items) {
       if (!cat) {
         cat = _createCategoryAtEnd(sheet, item.category);
         categories.push(cat);
-        report.newCategories.push(cfg.name + ' → ' + item.category);
+        report.newCategories.push(L(cfg.name) + ' → ' + item.category);
       }
 
       let row;
@@ -271,7 +271,7 @@ function _insertClassifiedProducts(items) {
         }
       }
 
-      report.added.push({ warehouse: cfg.name, category: item.category, name: item.name });
+      report.added.push({ warehouse: L(cfg.name), category: item.category, name: item.name });
     });
   });
 
@@ -302,25 +302,25 @@ function _createCategoryAtEnd(sheet, catName) {
 }
 
 function _formatBulkImportReport(report, totalRequested) {
-  let msg = '✅ Готово!\n\n';
-  msg += 'Обработано товаров: ' + totalRequested + '\n';
-  msg += 'Добавлено на склад: ' + report.added.length;
+  let msg = L('✅ Готово!\n\n');
+  msg += L('Обработано товаров: ') + totalRequested + '\n';
+  msg += L('Добавлено на склад: ') + report.added.length;
   if (report.withStock > 0) {
-    msg += '\nС указанным остатком: ' + report.withStock;
+    msg += L('\nС указанным остатком: ') + report.withStock;
   }
 
   if (report.newCategories.length > 0) {
     const uniq = [...new Set(report.newCategories)];
-    msg += '\n\n🆕 Созданы новые категории (' + uniq.length + '):\n' + uniq.map(s => '• ' + s).join('\n');
+    msg += L('\n\n🆕 Созданы новые категории (') + uniq.length + '):\n' + uniq.map(s => '• ' + s).join('\n');
   }
 
   if (report.skipped.length > 0) {
-    msg += '\n\n⚠️ Не удалось распределить (' + report.skipped.length + '):\n' +
+    msg += L('\n\n⚠️ Не удалось распределить (') + report.skipped.length + '):\n' +
       report.skipped.slice(0, 20).map(s => '• ' + s.name + ' — ' + s.reason).join('\n');
-    if (report.skipped.length > 20) msg += '\n… и ещё ' + (report.skipped.length - 20);
+    if (report.skipped.length > 20) msg += L('\n… и ещё ') + (report.skipped.length - 20);
   }
 
-  msg += '\n\nПроверьте склады и при необходимости поправьте вручную ' +
-         '(➕ Добавить категорию / Добавление строк).';
+  msg += L('\n\nПроверьте склады и при необходимости поправьте вручную ') +
+         L('(➕ Добавить категорию / Добавление строк).');
   return msg;
 }

@@ -4,7 +4,7 @@ function showDeliveryConfirmDialog(warehouseType) {
   try {
     const wh = WAREHOUSE_TYPES[warehouseType];
     if (!wh) {
-      SpreadsheetApp.getUi().alert('❌ Неизвестный тип склада: ' + warehouseType);
+      SpreadsheetApp.getUi().alert(L('❌ Неизвестный тип склада: ') + warehouseType);
       return;
     }
 
@@ -12,18 +12,18 @@ function showDeliveryConfirmDialog(warehouseType) {
 
     if (deliveries.length === 0) {
       SpreadsheetApp.getUi().alert(
-        '📭 Нет данных о поставке\n\n' +
-        'Заполните форму логиста — данные появятся в дашборде\n' +
-        'в колонке "Поставка".\n\n' +
-        'Если поставка уже была подтверждена сегодня — новых\n' +
-        'непроверенных позиций нет.'
+        L('📭 Нет данных о поставке\n\n') +
+        L('Заполните форму логиста — данные появятся в дашборде\n') +
+        L('в колонке "Поставка".\n\n') +
+        L('Если поставка уже была подтверждена сегодня — новых\n') +
+        L('непроверенных позиций нет.')
       );
       return;
     }
 
     const totalUnits = deliveries.reduce(function(sum, d) { return sum + d.fromForm; }, 0);
 
-    const template           = HtmlService.createTemplateFromFile('DeliveryConfirmDialog');
+    const template           = htmlTemplate_('DeliveryConfirmDialog');
     template.warehouseType   = warehouseType;
     template.deliveries      = deliveries;
     template.totalUnits      = totalUnits;
@@ -31,18 +31,18 @@ function showDeliveryConfirmDialog(warehouseType) {
 
     SpreadsheetApp.getUi().showModalDialog(
       template.evaluate().setWidth(580).setHeight(640),
-      wh.icon + ' Подтверждение поставки — ' + wh.name
+      wh.icon + L(' Подтверждение поставки — ') + wh.name
     );
 
   } catch(e) {
-    SpreadsheetApp.getUi().alert('❌ Ошибка открытия диалога:\n' + e.toString());
+    SpreadsheetApp.getUi().alert(L('❌ Ошибка открытия диалога:\n') + e.toString());
   }
 }
 
 function _getDeliveryDataFromDashboard(warehouseType) {
   const ss        = SpreadsheetApp.getActiveSpreadsheet();
   const cfg       = getWarehouseConfigByType(warehouseType);
-  const dashSheet = ss.getSheetByName(cfg.dashSheet);
+  const dashSheet = SH_(ss, cfg.dashSheet);
 
   if (!dashSheet) return [];
 
@@ -53,7 +53,7 @@ function _getDeliveryDataFromDashboard(warehouseType) {
   let   postavkaIdx = -1;
 
   for (let c = 0; c < headers.length; c++) {
-    const h = headers[c] ? headers[c].toString().trim() : '';
+    const h = headers[c] ? K(headers[c]) : '';
     if (h === 'Поставка') { postavkaIdx = c; break; }
   }
 
@@ -91,7 +91,7 @@ function _getDeliveryDataFromDashboard(warehouseType) {
 
 function _getUnitMapForWarehouseType(ss, cfg) {
   const map = {};
-  const warehouseSheet = ss.getSheetByName(cfg.warehouseSheet);
+  const warehouseSheet = SH_(ss, cfg.warehouseSheet);
   if (!warehouseSheet) return map;
   const data = warehouseSheet.getDataRange().getValues();
   for (let i = 2; i < data.length; i++) {
@@ -141,7 +141,7 @@ function processDeliveryConfirmationNew(warehouseType, formData) {
     const confirmed = _addToWarehouseStock(ss, cfg, formData);
 
     if (confirmed.length === 0) {
-      return { success: false, message: '❌ Не удалось обновить остатки. Проверьте названия товаров на складе.' };
+      return { success: false, message: L('❌ Не удалось обновить остатки. Проверьте названия товаров на складе.') };
     }
 
     const todayStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM.yyyy');
@@ -168,18 +168,18 @@ function processDeliveryConfirmationNew(warehouseType, formData) {
 
     return {
       success: true,
-      message: '✅ Поставка подтверждена!\n\n' + confirmed.length + ' позиций добавлено к остаткам.\nУведомления отправлены поставщикам.'
+      message: L('✅ Поставка подтверждена!\n\n') + confirmed.length + L(' позиций добавлено к остаткам.\nУведомления отправлены поставщикам.')
     };
 
   } catch(e) {
     Logger.log('❌ processDeliveryConfirmationNew: ' + e.toString());
-    return { success: false, message: '❌ Ошибка: ' + e.toString() };
+    return { success: false, message: L('❌ Ошибка: ') + e.toString() };
   }
 }
 
 function _addToWarehouseStock(ss, cfg, formData) {
-  const warehouseSheet = ss.getSheetByName(cfg.warehouseSheet);
-  if (!warehouseSheet) throw new Error('Склад "' + cfg.warehouseSheet + '" не найден');
+  const warehouseSheet = SH_(ss, cfg.warehouseSheet);
+  if (!warehouseSheet) throw new Error(L('Склад "') + L(cfg.warehouseSheet) + L('" не найден'));
 
   const data     = warehouseSheet.getDataRange().getValues();
   const confirmed = [];
@@ -222,7 +222,7 @@ function _addToWarehouseStock(ss, cfg, formData) {
 }
 
 function _updateDashboardDelivery(ss, cfg, formData) {
-  const dashSheet = ss.getSheetByName(cfg.dashSheet);
+  const dashSheet = SH_(ss, cfg.dashSheet);
   if (!dashSheet) return;
 
   const data    = dashSheet.getDataRange().getValues();
@@ -230,7 +230,7 @@ function _updateDashboardDelivery(ss, cfg, formData) {
 
   let postavkaIdx = -1;
   for (let c = 0; c < headers.length; c++) {
-    if (headers[c] && headers[c].toString().trim() === 'Поставка') { postavkaIdx = c; break; }
+    if (headers[c] && K(headers[c]) === 'Поставка') { postavkaIdx = c; break; }
   }
   if (postavkaIdx === -1) return;
 
@@ -254,27 +254,27 @@ function _sendDeliveryConfirmToTelegram(warehouseType, confirmed, cfg) {
 
   const grouped = {};
   confirmed.forEach(function(item) {
-    const supplier = item.supplier || 'Без поставщика';
+    const supplier = item.supplier || L('Без поставщика');
     if (!grouped[supplier]) grouped[supplier] = [];
     grouped[supplier].push(item);
   });
 
   Object.entries(grouped).forEach(function([supplier, items]) {
-    let text = cfg.icon + ' <b>ПОСТАВКА ПОДТВЕРЖДЕНА</b>\n';
+    let text = cfg.icon + L(' <b>ПОСТАВКА ПОДТВЕРЖДЕНА</b>\n');
     text += '🏪 ' + wh.name + '\n';
-    text += '📦 Поставщик: <b>' + supplier + '</b>\n';
+    text += L('📦 Поставщик: <b>') + supplier + '</b>\n';
     text += '📅 ' + today + '\n';
     text += '─'.repeat(28) + '\n';
 
     items.forEach(function(item, idx) {
-      const unit = item.unit ? ' ' + item.unit : ' шт';
+      const unit = item.unit ? ' ' + item.unit : L(' шт');
       text += '\n' + (idx + 1) + '. <b>' + item.name + '</b> — ' + item.qty + unit;
-      text += '  (склад: ' + item.newStock + unit + ')';
+      text += L('  (склад: ') + item.newStock + unit + ')';
     });
 
     text += '\n\n' + '─'.repeat(28) + '\n';
-    text += '📦 Позиций принято: <b>' + items.length + '</b>\n';
-    text += '✅ Остатки обновлены';
+    text += L('📦 Позиций принято: <b>') + items.length + '</b>\n';
+    text += L('✅ Остатки обновлены');
 
     const hasOwnChat = !!supplierChats[supplier];
     const chatId      = hasOwnChat ? supplierChats[supplier] : defaultChatId;

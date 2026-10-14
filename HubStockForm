@@ -6,11 +6,11 @@ function updateHubStockForm() {
   const officeName   = getOfficeName();
   const allProducts  = getAllHubProducts();
 
-  const form = _getOrCreateForm(HUB_STOCK_FORM_ID_KEY, 'Остатки на складе — форма хозяюшки');
-  form.setTitle((officeName ? officeName + '. ' : '') + 'Остатки на складе — форма хозяюшки');
+  const form = _getOrCreateForm(HUB_STOCK_FORM_ID_KEY, L('Остатки на складе — форма хозяюшки'));
+  form.setTitle((officeName ? officeName + '. ' : '') + L('Остатки на складе — форма хозяюшки'));
   form.setDescription(
-    'Раз в неделю проверьте физический остаток по каждой позиции и впишите число.\n' +
-    'Если товара нет совсем — впишите 0.'
+    L('Раз в неделю проверьте физический остаток по каждой позиции и впишите число.\n') +
+    L('Если товара нет совсем — впишите 0.')
   );
   form.setCollectEmail(false);
   form.setLimitOneResponsePerUser(false);
@@ -22,7 +22,7 @@ function updateHubStockForm() {
 
   const numberValidation = FormApp.createTextValidation()
     .requireNumberGreaterThanOrEqualTo(0)
-    .setHelpText('Введите число (0, если товара нет)')
+    .setHelpText(L('Введите число (0, если товара нет)'))
     .build();
 
   let isFirstPage = true;
@@ -31,19 +31,19 @@ function updateHubStockForm() {
     const products = allProducts.filter(p => p.warehouseType === warehouseType);
     if (products.length === 0) return;
 
-    if (!isFirstPage) form.addPageBreakItem().setTitle(cfg.icon + ' ' + cfg.name);
+    if (!isFirstPage) form.addPageBreakItem().setTitle(cfg.icon + ' ' + L(cfg.name));
     isFirstPage = false;
 
     products.forEach(p => {
       form.addTextItem()
         .setTitle(p.name)
-        .setHelpText('Текущий остаток, ' + (p.unit || 'шт'))
+        .setHelpText(L('Текущий остаток, ') + (p.unit || L('шт')))
         .setValidation(numberValidation)
         .setRequired(false);
     });
   });
 
-  if (isFirstPage) throw new Error('Нет ни одного активного товара ни на одном складе.');
+  if (isFirstPage) throw new Error(L('Нет ни одного активного товара ни на одном складе.'));
 
   _saveFormId(HUB_STOCK_FORM_ID_KEY, form);
   attachFormToSheet(form, HUB_STOCK_RESPONSE_SHEET, '#6a329f');
@@ -55,16 +55,16 @@ function updateHubStockForm() {
 function updateHubStockFormManual() {
   try {
     const r = updateHubStockForm();
-    SpreadsheetApp.getUi().alert('✅ Форма остатков обновлена!\n\n' + r.short);
+    SpreadsheetApp.getUi().alert(L('✅ Форма остатков обновлена!\n\n') + r.short);
   } catch(e) {
-    SpreadsheetApp.getUi().alert('❌ Ошибка: ' + e.toString());
+    SpreadsheetApp.getUi().alert(L('❌ Ошибка: ') + e.toString());
   }
 }
 
 function onHubStockFormSubmit(e) {
   try {
     const ss    = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(HUB_STOCK_RESPONSE_SHEET);
+    const sheet = SH_(ss, HUB_STOCK_RESPONSE_SHEET);
     if (!sheet) return;
 
     const row      = e && e.range ? e.range.getRow() : sheet.getLastRow();
@@ -113,10 +113,10 @@ function onHubStockFormSubmit(e) {
 
 function _getOrCreateHubHistorySheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(HUB_HISTORY_SHEET);
+  let sheet = SH_(ss, HUB_HISTORY_SHEET);
 
   if (sheet) {
-    const firstHeader = sheet.getRange(1, 1).getValue().toString().trim();
+    const firstHeader = K(sheet.getRange(1, 1).getValue());
     if (firstHeader === 'Дата') {
       // старый формат листа (дата отдельной колонкой на каждой строке) — пересоздаём
       // под новый, сгруппированный по дням вид; данных там пока минимум (лист новый)
@@ -127,11 +127,11 @@ function _getOrCreateHubHistorySheet() {
       return sheet;
     }
   } else {
-    sheet = ss.insertSheet(HUB_HISTORY_SHEET);
+    sheet = ss.insertSheet(L(HUB_HISTORY_SHEET));
   }
 
   sheet.getRange(1, 1, 1, 6).setValues([[
-    'Товар', 'Категория', 'Остаток был', 'Остаток стал', 'Расход за неделю', 'Единица'
+    L('Товар'), L('Категория'), L('Остаток был'), L('Остаток стал'), L('Расход за неделю'), L('Единица')
   ]]).setBackground('#4a148c').setFontColor('#ffffff').setFontWeight('bold');
   sheet.setFrozenRows(1);
   sheet.setColumnWidth(1, 220);

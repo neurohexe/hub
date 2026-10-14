@@ -6,7 +6,7 @@ const MenuManager = (function() {
     const result = [];
     sheets.forEach(function(sheet) {
       const name = sheet.getName();
-      const m = name.match(/^Меню\s+(\d{2}\.\d{2})-(\d{2}\.\d{2})$/);
+      const m = name.match(/^(?:Меню|Menu)\s+(\d{2}\.\d{2})-(\d{2}\.\d{2})$/);
       if (!m) return;
       const monday = _parseDateDDMM(m[1]);
       const friday = _parseDateDDMM(m[2]);
@@ -51,8 +51,8 @@ const MenuManager = (function() {
 
   function _getProductsFromWarehouse(categoryName) {
     const ss             = SpreadsheetApp.getActiveSpreadsheet();
-    const warehouseSheet = ss.getSheetByName('Склад_Продукты');
-    if (!warehouseSheet) return ['Остатки', 'Отсутствует'];
+    const warehouseSheet = SH_(ss, L('Склад_Продукты'));
+    if (!warehouseSheet) return [L('Остатки'), L('Отсутствует')];
     const data     = warehouseSheet.getDataRange().getValues();
     const products = [];
     let   inCat    = false;
@@ -67,7 +67,7 @@ const MenuManager = (function() {
       }
       if (inCat && name && active === true) products.push(name);
     }
-    return [...products, 'Остатки', 'Отсутствует'];
+    return [...products, L('Остатки'), L('Отсутствует')];
   }
 
   function _setDropdown(sheet, row, col, categoryName) {
@@ -125,19 +125,19 @@ const MenuManager = (function() {
       const config = loadMenuConfig();
       if (!config || (!config.rotatingCategories.length && !config.alwaysOn.length &&
           (!config.timings || !config.timings.length))) {
-        SpreadsheetApp.getUi().alert('⚠️ Конструктор меню не настроен.');
+        SpreadsheetApp.getUi().alert(L('⚠️ Конструктор меню не настроен.'));
         return;
       }
       const sheet = buildMenu(config, true);
       if (sheet) saveMenuDataToStorage(sheet, true);
       SpreadsheetApp.getUi().alert(
-        '✅ Меню на следующую неделю создано!\n\n' +
-        '• Выберите ассортимент в новом листе\n' +
-        '• После выбора нажмите: Меню → Сохранить меню для планшетов\n' +
-        '• Старое меню остаётся до конца текущей недели'
+        L('✅ Меню на следующую неделю создано!\n\n') +
+        L('• Выберите ассортимент в новом листе\n') +
+        L('• После выбора нажмите: Меню → Сохранить меню для планшетов\n') +
+        L('• Старое меню остаётся до конца текущей недели')
       );
     } catch(error) {
-      SpreadsheetApp.getUi().alert('❌ Ошибка: ' + error.toString());
+      SpreadsheetApp.getUi().alert(L('❌ Ошибка: ') + error.toString());
     }
   }
 
@@ -146,21 +146,21 @@ const MenuManager = (function() {
       const config = loadMenuConfig();
       if (!config || (!config.rotatingCategories.length && !config.alwaysOn.length &&
           (!config.timings || !config.timings.length))) {
-        SpreadsheetApp.getUi().alert('⚠️ Конструктор меню не настроен.');
+        SpreadsheetApp.getUi().alert(L('⚠️ Конструктор меню не настроен.'));
         return;
       }
       const sheet = buildMenu(config, false);
       if (sheet) saveMenuDataToStorage(sheet, false);
-      SpreadsheetApp.getUi().alert('✅ Меню на текущую неделю создано!');
+      SpreadsheetApp.getUi().alert(L('✅ Меню на текущую неделю создано!'));
     } catch(error) {
-      SpreadsheetApp.getUi().alert('❌ Ошибка: ' + error.toString());
+      SpreadsheetApp.getUi().alert(L('❌ Ошибка: ') + error.toString());
     }
   }
 
   function buildMenu(config, nextWeek) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    if (!ss.getSheetByName('Склад_Продукты')) {
-      throw new Error('Лист Склад_Продукты не найден');
+    if (!SH_(ss, L('Склад_Продукты'))) {
+      throw new Error(L('Лист Склад_Продукты не найден'));
     }
 
     const today  = new Date();
@@ -171,20 +171,20 @@ const MenuManager = (function() {
 
     const mondayStr = Utilities.formatDate(monday, Session.getScriptTimeZone(), 'dd.MM');
     const fridayStr = Utilities.formatDate(friday, Session.getScriptTimeZone(), 'dd.MM');
-    const sheetName = 'Меню ' + mondayStr + '-' + fridayStr;
+    const sheetName = L('Меню ') + mondayStr + '-' + fridayStr;
 
-    const existing = ss.getSheetByName(sheetName);
+    const existing = SH_(ss, sheetName);
     if (existing) {
       const resp = SpreadsheetApp.getUi().alert(
-        'Лист "' + sheetName + '" уже существует',
-        'Пересоздать? Выбранный ассортимент будет сброшен.',
+        L('Лист "') + sheetName + L('" уже существует'),
+        L('Пересоздать? Выбранный ассортимент будет сброшен.'),
         SpreadsheetApp.getUi().ButtonSet.YES_NO
       );
       if (resp !== SpreadsheetApp.getUi().Button.YES) return null;
       ss.deleteSheet(existing);
     }
 
-    const menuSheet = ss.insertSheet(sheetName);
+    const menuSheet = ss.insertSheet(L(sheetName));
 
     const maxPositions = _calcMaxPositions(config);
     const totalCols    = 1 + maxPositions;
@@ -201,7 +201,7 @@ const MenuManager = (function() {
 
     menuSheet.getRange(row, 1, 1, totalCols).merge();
     menuSheet.getRange(row, 1)
-      .setValue('Меню на неделю с ' + mondayStr + ' по ' + fridayStr)
+      .setValue(L('Меню на неделю с ') + mondayStr + L(' по ') + fridayStr)
       .setHorizontalAlignment('center')
       .setFontSize(16).setFontWeight('bold')
       .setBackground('#1c4587').setFontColor('white')
@@ -214,7 +214,7 @@ const MenuManager = (function() {
     if (config.rotatingCategories.length) {
       menuSheet.getRange(row, 1, 1, totalCols).merge();
       menuSheet.getRange(row, 1)
-        .setValue('ВЫБОР АССОРТИМЕНТА НА НЕДЕЛЮ:')
+        .setValue(L('ВЫБОР АССОРТИМЕНТА НА НЕДЕЛЮ:'))
         .setFontWeight('bold').setBackground('#FFE599')
         .setFontSize(12);
       menuSheet.setRowHeight(row, 30);
@@ -228,7 +228,7 @@ const MenuManager = (function() {
         if (!assortmentRefs[rc.category]) assortmentRefs[rc.category] = {};
 
         if (mode === 'weekly') {
-          menuSheet.getRange(row, 1).setValue(rc.category + ' на неделю:').setFontWeight('bold');
+          menuSheet.getRange(row, 1).setValue(rc.category + L(' на неделю:')).setFontWeight('bold');
           menuSheet.getRange(row, 2, 1, totalCols - 1).merge();
           _setDropdown(menuSheet, row, 2, rc.category);
           assortmentRefs[rc.category].weekly = row;
@@ -238,7 +238,7 @@ const MenuManager = (function() {
 
         } else if (mode === 'weekly_multi') {
           for (let s = 0; s < countPerDay; s++) {
-            menuSheet.getRange(row, 1).setValue(rc.category + ' вид ' + (s + 1) + ':').setFontWeight('bold');
+            menuSheet.getRange(row, 1).setValue(rc.category + L(' вид ') + (s + 1) + ':').setFontWeight('bold');
             menuSheet.getRange(row, 2, 1, totalCols - 1).merge();
             _setDropdown(menuSheet, row, 2, rc.category);
             if (!assortmentRefs[rc.category].weeklyMulti) assortmentRefs[rc.category].weeklyMulti = [];
@@ -253,7 +253,7 @@ const MenuManager = (function() {
             const date    = new Date(monday);
             date.setDate(date.getDate() + dayIdx);
             const dateStr = Utilities.formatDate(date, Session.getScriptTimeZone(), 'dd.MM');
-            const dayName = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][dayIdx];
+            const dayName = [L('Пн'),L('Вт'),L('Ср'),L('Чт'),L('Пт'),L('Сб'),L('Вс')][dayIdx];
             menuSheet.getRange(row, 1).setValue(rc.category + ' ' + dayName + ' (' + dateStr + '):').setFontWeight('bold');
             menuSheet.getRange(row, 2, 1, totalCols - 1).merge();
             _setDropdown(menuSheet, row, 2, rc.category);
@@ -268,7 +268,7 @@ const MenuManager = (function() {
             const date    = new Date(monday);
             date.setDate(date.getDate() + dayIdx);
             const dateStr = Utilities.formatDate(date, Session.getScriptTimeZone(), 'dd.MM');
-            const dayName = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'][dayIdx];
+            const dayName = [L('Пн'),L('Вт'),L('Ср'),L('Чт'),L('Пт'),L('Сб'),L('Вс')][dayIdx];
             menuSheet.getRange(row, 1).setValue(rc.category + ' ' + dayName + ' (' + dateStr + '):').setFontWeight('bold');
             for (let s = 0; s < Math.min(countPerDay, maxPositions); s++) {
               _setDropdown(menuSheet, row, 2 + s, rc.category);
@@ -287,20 +287,20 @@ const MenuManager = (function() {
     if (config.alwaysOn && config.alwaysOn.length) {
       menuSheet.getRange(row, 1, 1, totalCols).merge();
       menuSheet.getRange(row, 1)
-        .setValue('Круглосуточно стоят:')
+        .setValue(L('Круглосуточно стоят:'))
         .setFontWeight('bold').setFontSize(12)
         .setBackground('#B4D7A8');
       menuSheet.setRowHeight(row, 30);
       row++;
 
-      const daysShort = ['пн','вт','ср','чт','пт','сб','вс'];
+      const daysShort = [L('пн'),L('вт'),L('ср'),L('чт'),L('пт'),L('сб'),L('вс')];
 
       for (const item of config.alwaysOn) {
         if (!item.value || item.value.toString().trim() === '') continue;
 
         const period = (typeof item.dayFrom === 'number' && typeof item.dayTo === 'number')
-          ? 'С ' + daysShort[item.dayFrom] + ' по ' + daysShort[item.dayTo]
-          : (typeof item.dayFrom === 'number' ? 'С ' + daysShort[item.dayFrom] : '');
+          ? L('С ') + daysShort[item.dayFrom] + L(' по ') + daysShort[item.dayTo]
+          : (typeof item.dayFrom === 'number' ? L('С ') + daysShort[item.dayFrom] : '');
 
         menuSheet.getRange(row, 1).setValue(period).setFontColor('#555555').setFontSize(10);
         menuSheet.getRange(row, 2, 1, totalCols - 1).merge();
@@ -323,10 +323,10 @@ const MenuManager = (function() {
             if (firstRef) {
               menuSheet.getRange(row, 2).setValue('=B' + firstRef.row);
             } else {
-              menuSheet.getRange(row, 2).setValue('[' + item.value + ' не настроен]');
+              menuSheet.getRange(row, 2).setValue('[' + item.value + L(' не настроен]'));
             }
           } else {
-            menuSheet.getRange(row, 2).setValue('[' + item.value + ' не настроен]');
+            menuSheet.getRange(row, 2).setValue('[' + item.value + L(' не настроен]'));
           }
         } else {
           menuSheet.getRange(row, 2).setValue(item.value.toString().trim());
@@ -342,12 +342,12 @@ const MenuManager = (function() {
       row++;
     }
 
-    const daysFull = ['понедельник','вторник','среда','четверг','пятница'];
+    const daysFull = [L('понедельник'),L('вторник'),L('среда'),L('четверг'),L('пятница')];
 
-    menuSheet.getRange(row, 1).setValue('Время').setFontWeight('bold').setBackground('#E8EAED').setFontSize(11);
+    menuSheet.getRange(row, 1).setValue(L('Время')).setFontWeight('bold').setBackground('#E8EAED').setFontSize(11);
     if (totalCols > 1) {
       menuSheet.getRange(row, 2, 1, totalCols - 1).merge();
-      menuSheet.getRange(row, 2).setValue('Что выкладываем').setFontWeight('bold').setBackground('#E8EAED').setFontSize(11);
+      menuSheet.getRange(row, 2).setValue(L('Что выкладываем')).setFontWeight('bold').setBackground('#E8EAED').setFontSize(11);
     }
     menuSheet.getRange(row, 1, 1, totalCols).setBackground('#E8EAED');
     menuSheet.setRowHeight(row, 30);
@@ -403,10 +403,10 @@ const MenuManager = (function() {
                   timeGroups[key].push('=B' + ref.row);
                 }
               } else {
-                timeGroups[key].push('[' + item.value + ' не настроен]');
+                timeGroups[key].push('[' + item.value + L(' не настроен]'));
               }
             } else {
-              timeGroups[key].push('[' + item.value + ' не найдена]');
+              timeGroups[key].push('[' + item.value + L(' не найдена]'));
             }
           } else {
             if (item.value) timeGroups[key].push(item.value);
@@ -425,7 +425,7 @@ const MenuManager = (function() {
         const [timeFrom, timeTo] = key.split('|');
         const timeLabel = timeTo
           ? timeFrom + ' - ' + timeTo
-          : timeFrom + ' - пока не съедят';
+          : timeFrom + L(' - пока не съедят');
         const items = timeGroups[key];
 
         const rowBg = rowColors[rowColorIdx % 2];
@@ -476,7 +476,7 @@ const MenuManager = (function() {
 
 function refreshMenuAssortment() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const warehouseSheet = ss.getSheetByName('Склад_Продукты');
+  const warehouseSheet = SH_(ss, L('Склад_Продукты'));
   if (!warehouseSheet) return;
 
   const menuSheets = MenuManager.findMenuSheets();
@@ -496,7 +496,7 @@ function refreshMenuAssortment() {
   targets.forEach(menu => _refreshAssortmentOnSheet(menu.sheet, warehouseSheet));
 
   SpreadsheetApp.getUi().alert(
-    '✅ Ассортимент обновлён на листах:\n\n' + targets.map(m => m.name).join('\n')
+    L('✅ Ассортимент обновлён на листах:\n\n') + targets.map(m => m.name).join('\n')
   );
 }
 
@@ -533,9 +533,9 @@ function _refreshAssortmentOnSheet(menuSheet, warehouseSheet) {
 
 function _extractCategoryName(label, warehouseSheet) {
   const suffixes = [
-    / на неделю:?$/i,
-    / вид \d+:?$/i,
-    / (пн|вт|ср|чт|пт|сб|вс)\s*\([\d.]+\):?$/i
+    / (?:на неделю|for the week):?$/i,
+    / (?:вид|type) \d+:?$/i,
+    / (?:пн|вт|ср|чт|пт|сб|вс|mon|tue|wed|thu|fri|sat|sun)\s*\([\d.]+\):?$/i
   ];
 
   let candidate = label.replace(/:$/, '').trim();
@@ -581,7 +581,7 @@ function _getProductsFromWarehouseForDropdown(warehouseSheet, categoryName) {
     if (inCategory && name && active === true) products.push(name);
   }
 
-  return [...products, 'Остатки', 'Отсутствует'];
+  return [...products, L('Остатки'), L('Отсутствует')];
 }
 
 function cleanupOldMenuSheets() {
@@ -605,18 +605,18 @@ function autoFillMenuByStock() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const menuSheet = ss.getActiveSheet();
 
-  if (!/^Меню\s+\d{2}\.\d{2}-\d{2}\.\d{2}$/.test(menuSheet.getName())) {
+  if (!/^(?:Меню|Menu)\s+\d{2}\.\d{2}-\d{2}\.\d{2}$/.test(menuSheet.getName())) {
     ui.alert(
-      '❌ Откройте лист меню\n\n' +
-      'Сначала перейдите на вкладку листа меню ' +
-      '(вида "Меню 01.07-05.07"), затем повторите команду.'
+      L('❌ Откройте лист меню\n\n') +
+      L('Сначала перейдите на вкладку листа меню ') +
+      L('(вида "Меню 01.07-05.07"), затем повторите команду.')
     );
     return;
   }
 
-  const warehouseSheet = ss.getSheetByName('Склад_Продукты');
+  const warehouseSheet = SH_(ss, L('Склад_Продукты'));
   if (!warehouseSheet) {
-    ui.alert('❌ Лист "Склад_Продукты" не найден');
+    ui.alert(L('❌ Лист "Склад_Продукты" не найден'));
     return;
   }
 
@@ -624,10 +624,10 @@ function autoFillMenuByStock() {
   let startRow = -1, endRow = data.length;
 
   for (let i = 0; i < data.length; i++) {
-    const label = data[i][0] ? data[i][0].toString().toUpperCase() : '';
-    if (startRow === -1 && label.includes('ВЫБОР АССОРТИМЕНТА')) { startRow = i + 1; continue; }
+    const label = data[i][0] ? data[i][0].toString() : '';
+    if (startRow === -1 && isMenuAssortLabel_(label)) { startRow = i + 1; continue; }
     if (startRow !== -1 &&
-        (label.includes('КРУГЛОСУТОЧНО') || label.includes('ВРЕМЯ ВЫКЛАДКИ') || label === 'ВРЕМЯ')) {
+        (isMenuAlwaysLabel_(label) || isMenuTimeLabel_(label))) {
       endRow = i;
       break;
     }
@@ -635,9 +635,9 @@ function autoFillMenuByStock() {
 
   if (startRow === -1) {
     ui.alert(
-      '⚠️ В этом меню нет раздела "Выбор ассортимента на неделю"\n\n' +
-      'Рандомайзер работает только со сменными категориями,\n' +
-      'настроенными через Конструктор меню.'
+      L('⚠️ В этом меню нет раздела "Выбор ассортимента на неделю"\n\n') +
+      L('Рандомайзер работает только со сменными категориями,\n') +
+      L('настроенными через Конструктор меню.')
     );
     return;
   }
@@ -681,16 +681,16 @@ function autoFillMenuByStock() {
   });
 
   if (filledRows === 0) {
-    ui.alert('⚠️ Не найдено ни одной заполняемой позиции ассортимента.');
+    ui.alert(L('⚠️ Не найдено ни одной заполняемой позиции ассортимента.'));
     return;
   }
 
   ui.alert(
-    '✅ Рандомайзер заполнил ассортимент!\n\n' +
-    'Категорий: ' + Object.keys(categoryRows).length + '\n' +
-    'Строк: ' + filledRows + '\n' +
-    'Позиций: ' + filledSlots +
-    (skippedNoCategory > 0 ? '\n\nПропущено строк (категория не распознана): ' + skippedNoCategory : '')
+    L('✅ Рандомайзер заполнил ассортимент!\n\n') +
+    L('Категорий: ') + Object.keys(categoryRows).length + '\n' +
+    L('Строк: ') + filledRows + '\n' +
+    L('Позиций: ') + filledSlots +
+    (skippedNoCategory > 0 ? L('\n\nПропущено строк (категория не распознана): ') + skippedNoCategory : '')
   );
 }
 
@@ -730,14 +730,14 @@ function _getCategoryProductsWithStock(warehouseSheet, categoryName) {
 
 function _pickProductsByStock(products, count) {
   if (!products || products.length === 0) {
-    return new Array(count).fill('Отсутствует');
+    return new Array(count).fill(L('Отсутствует'));
   }
 
   const shuffled = _shuffleArray(products);
   const ordered  = shuffled.slice().sort((a, b) => b.qty - a.qty);
 
   const chosen = ordered.slice(0, count).map(p => p.name);
-  while (chosen.length < count) chosen.push('Остатки');
+  while (chosen.length < count) chosen.push(L('Остатки'));
   return chosen;
 }
 

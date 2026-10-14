@@ -2,8 +2,8 @@ const HouseholdWarehouse = (function() {
   const SHEET_NAME = 'Склад_Хозтовары';
 
   function getSheet() {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-    if (!sheet) throw new Error('Лист "' + SHEET_NAME + '" не найден');
+    const sheet = SH_(SpreadsheetApp.getActiveSpreadsheet(), SHEET_NAME);
+    if (!sheet) throw new Error(L('Лист "') + L(SHEET_NAME) + L('" не найден'));
     return sheet;
   }
 
@@ -16,31 +16,31 @@ const HouseholdWarehouse = (function() {
 
   function createStructure() {
     const ss = SpreadsheetApp.getActiveSpreadsheet(), ui = SpreadsheetApp.getUi();
-    let sheet = ss.getSheetByName(SHEET_NAME);
+    let sheet = SH_(ss, SHEET_NAME);
     if (sheet) {
-      if (ui.alert('Пересоздать?', 'Данные будут удалены.', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+      if (ui.alert(L('Пересоздать?'), L('Данные будут удалены.'), ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
       ss.deleteSheet(sheet);
     }
-    sheet = ss.insertSheet(SHEET_NAME);
+    sheet = ss.insertSheet(L(SHEET_NAME));
     _buildSheet(sheet);
     updateAllWarehouseDates();
-    ui.alert('Склад хозтоваров создан!\n\nG — Хозяюшки\nH — Клининг');
+    ui.alert(L('Склад хозтоваров создан!\n\nG — Хозяюшки\nH — Клининг'));
     sheet.activate();
   }
 
   function _buildSheet(sheet) {
     const today     = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM.yyyy');
     const suppliers = getSuppliersFromBaseInfo();
-    const categories = ['Моющие средства','Чистящие средства','Бумажная продукция','Хозяйственные принадлежности','Инвентарь'];
+    const categories = [L('Моющие средства'),L('Чистящие средства'),L('Бумажная продукция'),L('Хозяйственные принадлежности'),L('Инвентарь')];
     sheet.setColumnWidth(1,280); sheet.setColumnWidth(2,100); sheet.setColumnWidth(3,130);
     sheet.setColumnWidth(4,90);  sheet.setColumnWidth(5,120); sheet.setColumnWidth(6,160);
     sheet.setColumnWidth(7,90);  sheet.setColumnWidth(8,90);  sheet.setColumnWidth(9,50);
     sheet.getRange(1,1,1,9).merge();
-    sheet.getRange('A1').setValue('Данные хозтовары склада на ' + today)
+    sheet.getRange('A1').setValue(L('Данные хозтовары склада на ') + today)
       .setBackground('#2196F3').setFontColor('#ffffff').setFontWeight('bold').setFontSize(14)
       .setHorizontalAlignment('center').setVerticalAlignment('middle');
     sheet.setRowHeight(1,40);
-    sheet.getRange(2,1,1,9).setValues([['Название продукта','Количество','Единица измерения','Активность','Артикул','Поставщик','Хозяюшки','Клининг','']])
+    sheet.getRange(2,1,1,9).setValues([[L('Название продукта'),L('Количество'),L('Единица измерения'),L('Активность'),L('Артикул'),L('Поставщик'),L('Хозяюшки'),L('Клининг'),'']])
       .setBackground('#2196F3').setFontColor('#ffffff').setFontWeight('bold').setHorizontalAlignment('center');
     sheet.setRowHeight(2,35);
     const unitRule = getUnitsValidationRule();
@@ -54,7 +54,7 @@ const HouseholdWarehouse = (function() {
       sheet.getRange(row,9).setValue('➕').setFontSize(14).setHorizontalAlignment('center').setBackground('#4CAF50').setFontColor('#FFFFFF');
       sheet.setRowHeight(row,30); row++;
       sheet.getRange(row,2).setValue(0);
-      sheet.getRange(row,3).setValue('штука').setDataValidation(unitRule);
+      sheet.getRange(row,3).setValue(L('штука')).setDataValidation(unitRule);
       sheet.getRange(row,4).insertCheckboxes().check();
       sheet.getRange(row,7).insertCheckboxes().check();
       sheet.getRange(row,8).insertCheckboxes().uncheck();
@@ -67,8 +67,8 @@ const HouseholdWarehouse = (function() {
       sheet.setRowHeight(row,25); row += 2;
     });
     sheet.setFrozenRows(2);
-    sheet.getRange(1,1,1,9).protect().setDescription('Заголовок').setWarningOnly(true);
-    sheet.getRange(2,1,1,9).protect().setDescription('Заголовки').setWarningOnly(true);
+    sheet.getRange(1,1,1,9).protect().setDescription(L('Заголовок')).setWarningOnly(true);
+    sheet.getRange(2,1,1,9).protect().setDescription(L('Заголовки')).setWarningOnly(true);
     SpreadsheetApp.flush();
   }
 
@@ -142,8 +142,8 @@ const HouseholdDashboard = (function() {
   };
 
   function getOrCreateSheet(ss) {
-    let s = ss.getSheetByName(DASH_SHEET);
-    if (!s) s = ss.insertSheet(DASH_SHEET);
+    let s = SH_(ss, DASH_SHEET);
+    if (!s) s = ss.insertSheet(L(DASH_SHEET));
     return s;
   }
 
@@ -171,7 +171,7 @@ const HouseholdDashboard = (function() {
   }
 
   function _readResponseSheet(ss, sheetName, todayStr, isHostess) {
-    const result = {}, sheet = ss.getSheetByName(sheetName);
+    const result = {}, sheet = SH_(ss, sheetName);
     if (!sheet) return result;
     const data    = sheet.getDataRange().getValues();
     const headers = data[0];
@@ -180,7 +180,7 @@ const HouseholdDashboard = (function() {
       let rowDate;
       try { rowDate = Utilities.formatDate(new Date(ts), Session.getScriptTimeZone(), 'dd.MM.yyyy'); } catch(e) { continue; }
       if (rowDate !== todayStr) continue;
-      const gn = data[i][1] ? data[i][1].toString().trim() : (isHostess ? 'КП' : 'Клининг');
+      const gn = data[i][1] ? data[i][1].toString().trim() : (isHostess ? L('КП') : L('Клининг'));
       if (!result[gn]) result[gn] = {};
       for (let col = 2; col < headers.length; col++) {
         const p = headers[col] ? headers[col].toString().trim() : '';
@@ -194,7 +194,7 @@ const HouseholdDashboard = (function() {
   }
 
   function _readDeliverySheet(ss, todayStr) {
-    const result = {}, sheet = ss.getSheetByName(HH_SHEETS.logist);
+    const result = {}, sheet = SH_(ss, HH_SHEETS.logist);
     if (!sheet) return result;
     const data    = sheet.getDataRange().getValues();
     const headers = data[0];
@@ -220,7 +220,7 @@ const HouseholdDashboard = (function() {
     const headers = data[1];
     let idx = -1;
     for (let c = 0; c < headers.length; c++) {
-      if (headers[c] && headers[c].toString().trim().toUpperCase() === 'ВЫДАНО') { idx = c; break; }
+      if (headers[c] && K(headers[c]).toUpperCase() === 'ВЫДАНО') { idx = c; break; }
     }
     if (idx === -1) return result;
     for (let i = 2; i < data.length; i++) {
@@ -237,7 +237,7 @@ const HouseholdDashboard = (function() {
   function _readStockFromWarehouse() {
     const result = {};
     try {
-      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(HouseholdWarehouse.SHEET_NAME);
+      const sheet = SH_(SpreadsheetApp.getActiveSpreadsheet(), HouseholdWarehouse.SHEET_NAME);
       if (!sheet) return result;
       const data = sheet.getDataRange().getValues();
       for (let i = 2; i < data.length; i++) {
@@ -263,9 +263,9 @@ const HouseholdDashboard = (function() {
       .setHorizontalAlignment('center').setVerticalAlignment('middle');
     dash.setRowHeight(1,32);
 
-    const hv = ['Товар'];
+    const hv = [L('Товар')];
     coffeePoints.forEach(cp => hv.push(cp.name));
-    hv.push('Клининг','ИТОГО','ВЫДАНО','Поставка','Остаток на складе');
+    hv.push(L('Клининг'),L('ИТОГО'),L('ВЫДАНО'),L('Поставка'),L('Остаток на складе'));
     dash.getRange(2,1,1,totalCols).setValues([hv])
       .setFontWeight('bold').setFontColor('#ffffff')
       .setHorizontalAlignment('center').setBackground(COLORS.header);
@@ -284,7 +284,7 @@ const HouseholdDashboard = (function() {
 
     if (products.length === 0) {
       dash.getRange(3,1,1,totalCols).merge();
-      dash.getRange(3,1).setValue('Заказов за сегодня ещё нет')
+      dash.getRange(3,1).setValue(L('Заказов за сегодня ещё нет'))
         .setFontColor('#999').setFontStyle('italic').setHorizontalAlignment('center');
     } else {
       const rd = products.map(product => {

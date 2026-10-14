@@ -17,8 +17,8 @@ function _archiveWarehouse(warehouseType, dateStr) {
   var ss  = SpreadsheetApp.getActiveSpreadsheet();
   var cfg = getWarehouseConfigByType(warehouseType);
 
-  var warehouseSheet = ss.getSheetByName(cfg.warehouseSheet);
-  if (!warehouseSheet) throw new Error('Лист "' + cfg.warehouseSheet + '" не найден');
+  var warehouseSheet = SH_(ss, cfg.warehouseSheet);
+  if (!warehouseSheet) throw new Error(L('Лист "') + L(cfg.warehouseSheet) + L('" не найден'));
 
   var coffeePoints = BaseInfo.getActiveCoffeePoints();
   var headers      = _buildHeaders(cfg, coffeePoints);
@@ -88,7 +88,7 @@ function _readWarehouseProducts(warehouseSheet, excludeCategories) {
                 (active === '' || active === false || active === null);
     if (isCat && name) {
       currentCategory = name;
-      skipCategory = excludeCategories.indexOf(name) !== -1;
+      skipCategory = excludeCategories.indexOf(K(name)) !== -1;
       continue;
     }
     if (skipCategory || !name || active !== true) continue;
@@ -99,7 +99,7 @@ function _readWarehouseProducts(warehouseSheet, excludeCategories) {
 
 function _readDayOrders(sheetName, dateStr, isHostess) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var result = {}, sheet = ss.getSheetByName(sheetName);
+  var result = {}, sheet = SH_(ss, sheetName);
   if (!sheet) return result;
 
   var data = sheet.getDataRange().getValues(), headers = data[0];
@@ -109,7 +109,7 @@ function _readDayOrders(sheetName, dateStr, isHostess) {
     try { rowDate = Utilities.formatDate(new Date(ts), Session.getScriptTimeZone(), 'dd.MM.yyyy'); } catch(e) { continue; }
     if (rowDate !== dateStr) continue;
 
-    var groupName = data[i][1] ? data[i][1].toString().trim() : (isHostess ? 'КП' : 'Группа');
+    var groupName = data[i][1] ? data[i][1].toString().trim() : (isHostess ? L('КП') : L('Группа'));
     if (!result[groupName]) result[groupName] = {};
 
     for (var col = 2; col < headers.length; col++) {
@@ -125,7 +125,7 @@ function _readDayOrders(sheetName, dateStr, isHostess) {
 
 function _readDayDelivery(sheetName, dateStr) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var result = {}, sheet = ss.getSheetByName(sheetName);
+  var result = {}, sheet = SH_(ss, sheetName);
   if (!sheet) return result;
 
   var data = sheet.getDataRange().getValues(), headers = data[0];
@@ -148,7 +148,7 @@ function _readDayDelivery(sheetName, dateStr) {
 
 function _readIssuedFromDash(dashSheetName) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var result = {}, sheet = ss.getSheetByName(dashSheetName);
+  var result = {}, sheet = SH_(ss, dashSheetName);
   if (!sheet) return result;
 
   var data = sheet.getDataRange().getValues();
@@ -156,7 +156,7 @@ function _readIssuedFromDash(dashSheetName) {
 
   var headers = data[1], idx = -1;
   for (var c = 0; c < headers.length; c++) {
-    if (headers[c] && headers[c].toString().trim().toUpperCase() === 'ВЫДАНО') { idx = c; break; }
+    if (headers[c] && K(headers[c]).toUpperCase() === 'ВЫДАНО') { idx = c; break; }
   }
   if (idx === -1) return result;
 
@@ -172,9 +172,9 @@ function _readIssuedFromDash(dashSheetName) {
 
 function _ensureHeaders(cfg, headers) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var dbSheet = ss.getSheetByName(cfg.dbSheet);
+  var dbSheet = SH_(ss, cfg.dbSheet);
   if (!dbSheet) {
-    dbSheet = ss.insertSheet(cfg.dbSheet);
+    dbSheet = ss.insertSheet(L(cfg.dbSheet));
     Logger.log('✓ Создан "' + cfg.dbSheet + '"');
   }
   if (dbSheet.getLastRow() > 0) return;
@@ -186,10 +186,10 @@ function _ensureHeaders(cfg, headers) {
 }
 
 function _buildHeaders(cfg, coffeePoints) {
-  var headers = ['Дата', 'Товар', 'Категория'];
+  var headers = [L('Дата'), L('Товар'), L('Категория')];
   coffeePoints.forEach(function(cp) { headers.push(cp.name); });
-  if (cfg.hasCleaning) headers.push('🧹 Клининг');
-  headers.push('ИТОГО заказов', 'Выдано', 'Поставка', 'Остаток конец дня');
+  if (cfg.hasCleaning) headers.push(L('🧹 Клининг'));
+  headers.push(L('ИТОГО заказов'), L('Выдано'), L('Поставка'), L('Остаток конец дня'));
   return headers;
 }
 
@@ -197,7 +197,7 @@ function _appendRows(dbSheetName, todayData, dateStr, totalCols, headers) {
   if (todayData.length === 0) return;
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var dbSheet = ss.getSheetByName(dbSheetName);
+  var dbSheet = SH_(ss, dbSheetName);
   if (!dbSheet) {
     Logger.log('❌ Лист "' + dbSheetName + '" не найден');
     return;
@@ -206,7 +206,7 @@ function _appendRows(dbSheetName, todayData, dateStr, totalCols, headers) {
   var startRow = dbSheet.getLastRow() + 1;
   
   dbSheet.getRange(startRow, 1)
-    .setValue('📅 ' + dateStr + '  (товаров: ' + todayData.length + ')')
+    .setValue('📅 ' + dateStr + L('  (товаров: ') + todayData.length + ')')
     .setBackground('#e8eaf6').setFontWeight('bold').setFontSize(11).setFontColor('#1a237e')
     .setHorizontalAlignment('left').setVerticalAlignment('middle');
   
@@ -284,17 +284,17 @@ function resetAllDashboards() {
 function archiveAllWarehousesManual() {
   var ui    = SpreadsheetApp.getUi();
   var today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM.yyyy');
-  if (ui.alert('💾 Архивация', 'Записать данные за ' + today + '?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  if (ui.alert(L('💾 Архивация'), L('Записать данные за ') + today + '?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
   archiveAllWarehouses();
-  ui.alert('✅ Архивация завершена!');
+  ui.alert(L('✅ Архивация завершена!'));
 }
 
 function endOfDayManual() {
   var ui = SpreadsheetApp.getUi();
-  if (ui.alert('🌙 Конец дня', 'Запустить архивацию и сброс дашбордов?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  if (ui.alert(L('🌙 Конец дня'), L('Запустить архивацию и сброс дашбордов?'), ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
   endOfDayAll();
   resetAllDashboards();
-  ui.alert('✅ Конец дня выполнен!');
+  ui.alert(L('✅ Конец дня выполнен!'));
 }
 
 
@@ -305,7 +305,7 @@ function findArchiveError() {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     Logger.log('1. Таблица: ' + ss.getName());
-    var warehouseSheet = ss.getSheetByName(cfg.warehouseSheet);
+    var warehouseSheet = SH_(ss, cfg.warehouseSheet);
     Logger.log('2. warehouseSheet: ' + (warehouseSheet ? 'OK' : 'НЕ НАЙДЕН'));
     var coffeePoints = BaseInfo.getActiveCoffeePoints();
     Logger.log('3. coffeePoints: ' + coffeePoints.length);

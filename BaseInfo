@@ -20,12 +20,12 @@ const BaseInfo = (function() {
 
   function createSheet() {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = ss.getSheetByName(SHEET_NAME);
+    let sheet = SH_(ss, SHEET_NAME);
 
     if (sheet) {
       const response = SpreadsheetApp.getUi().alert(
-        'Лист "Базовая информация" уже существует',
-        'Пересоздать? Все данные будут удалены.',
+        L('Лист "Базовая информация" уже существует'),
+        L('Пересоздать? Все данные будут удалены.'),
         SpreadsheetApp.getUi().ButtonSet.YES_NO
       );
       if (response === SpreadsheetApp.getUi().Button.YES) {
@@ -35,7 +35,7 @@ const BaseInfo = (function() {
       }
     }
 
-    sheet = ss.insertSheet(SHEET_NAME);
+    sheet = ss.insertSheet(L(SHEET_NAME));
     sheet.setColumnWidth(1, 250);
     sheet.setColumnWidth(2, 220);
     sheet.setColumnWidth(3, 150);
@@ -44,10 +44,10 @@ const BaseInfo = (function() {
     buildStructure(sheet);
 
     SpreadsheetApp.getUi().alert(
-      '✅ Лист "Базовая информация" создан!\n\n' +
-      'Заполните данные офиса.\n\n' +
-      'Для подключения Telegram:\n' +
-      '⚙️ Настройки → 🔗 Настроить Telegram'
+      L('✅ Лист "Базовая информация" создан!\n\n') +
+      L('Заполните данные офиса.\n\n') +
+      L('Для подключения Telegram:\n') +
+      L('⚙️ Настройки → 🔗 Настроить Telegram')
     );
   }
 
@@ -56,24 +56,24 @@ const BaseInfo = (function() {
 
     sheet.getRange('A1:D1').merge();
     sheet.getRange('A1')
-      .setValue('БАЗОВАЯ ИНФОРМАЦИЯ ОФИСА — обновлено ' + today)
+      .setValue(L('БАЗОВАЯ ИНФОРМАЦИЯ ОФИСА — обновлено ') + today)
       .setBackground('#1c4587').setFontColor('#ffffff')
       .setFontWeight('bold').setFontSize(14)
       .setHorizontalAlignment('center').setVerticalAlignment('middle');
     sheet.setRowHeight(1, 40);
 
-    addSectionTitle(sheet, 3, 'ИДЕНТИФИКАЦИЯ ОФИСА');
+    addSectionTitle(sheet, 3, L('ИДЕНТИФИКАЦИЯ ОФИСА'));
     addDataBlock(sheet, 4, [
-      ['Название офиса:', ''],
-      ['ID офиса:', ''],
-      ['Город:', ''],
-      ['Дата запуска:', today]
+      [L('Название офиса:'), ''],
+      [L('ID офиса:'), ''],
+      [L('Город:'), ''],
+      [L('Дата запуска:'), today]
     ]);
 
-    addSectionTitle(sheet, 8, 'КОФЕ-ПОИНТЫ');
+    addSectionTitle(sheet, 8, L('КОФЕ-ПОИНТЫ'));
 
     sheet.getRange(CP_HEADER_ROW, 1, 1, 4)
-      .setValues([['ID', 'Название кофе-поинта', 'Этаж/Зона', 'Активен']]);
+      .setValues([['ID', L('Название кофе-поинта'), L('Этаж/Зона'), L('Активен')]]);
     sheet.getRange(CP_HEADER_ROW, 1, 1, 4)
       .setFontWeight('bold').setBackground('#6fa8dc').setFontColor('#ffffff')
       .setHorizontalAlignment('center')
@@ -95,7 +95,7 @@ const BaseInfo = (function() {
       .setBorder(null, null, true, null, null, null, '#4a86e8', SpreadsheetApp.BorderStyle.MEDIUM);
 
     sheet.getRange(CP_COUNTER_ROW, 1)
-      .setValue('Активных кофе-поинтов:').setFontWeight('bold').setBackground('#f3f3f3');
+      .setValue(L('Активных кофе-поинтов:')).setFontWeight('bold').setBackground('#f3f3f3');
 
     sheet.getRange(CP_COUNTER_ROW, 2)
       .setFormula('=COUNTIF(D10:D19;TRUE)').setFontWeight('bold')
@@ -107,15 +107,15 @@ const BaseInfo = (function() {
     const TG_START = CP_COUNTER_ROW + 2;
     sheet.getRange(TG_START, 1, 1, 4).merge();
     sheet.getRange(TG_START, 1)
-      .setValue('TELEGRAM — ЧАТ ЛОГИСТИКИ')
+      .setValue(L('TELEGRAM — ЧАТ ЛОГИСТИКИ'))
       .setFontWeight('bold').setFontSize(12)
       .setBackground('#2196F3').setFontColor('#ffffff').setVerticalAlignment('middle');
     sheet.setRowHeight(TG_START, 30);
 
     const tgData = [
-      ['Chat ID логистики:', 'Не подключён'],
-      ['Название чата:',      'Не подключён'],
-      ['Статус:',             'Не подключён']
+      [L('Chat ID логистики:'), L('Не подключён')],
+      [L('Название чата:'),      L('Не подключён')],
+      [L('Статус:'),             L('Не подключён')]
     ];
     for (let i = 0; i < tgData.length; i++) {
       const r = TG_START + 1 + i;
@@ -132,9 +132,9 @@ const BaseInfo = (function() {
     sheet.getRange(TG_INSTR, 1, 1, 4).merge();
     sheet.getRange(TG_INSTR, 1)
       .setValue(
-        'Как подключить: добавьте бота в чат поставщика → ' +
-        'бот напишет Chat ID → скопируйте ID → ' +
-        'Настройки → Настроить Telegram → вставьте ID'
+        L('Как подключить: добавьте бота в чат поставщика → ') +
+        L('бот напишет Chat ID → скопируйте ID → ') +
+        L('Настройки → Настроить Telegram → вставьте ID')
       )
       .setFontColor('#666666').setFontStyle('italic').setFontSize(10).setWrap(true);
     sheet.setRowHeight(TG_INSTR, 40);
@@ -148,7 +148,7 @@ const BaseInfo = (function() {
 
     sheet.getRange(startRow, 1, 1, COLS).merge();
     sheet.getRange(startRow, 1)
-      .setValue('ПОСТАВЩИКИ')
+      .setValue(L('ПОСТАВЩИКИ'))
       .setBackground('#1c4587').setFontColor('#ffffff')
       .setFontWeight('bold').setFontSize(13)
       .setHorizontalAlignment('center').setVerticalAlignment('middle');
@@ -158,7 +158,7 @@ const BaseInfo = (function() {
 
     const hdrRow = startRow + 1;
     sheet.getRange(hdrRow, 1, 1, COLS)
-      .setValues([['Название поставщика', 'Контакт', 'Примечание', 'Telegram Chat ID', 'Активен']])
+      .setValues([[L('Название поставщика'), L('Контакт'), L('Примечание'), 'Telegram Chat ID', L('Активен')]])
       .setBackground('#4a86e8').setFontColor('#ffffff')
       .setFontWeight('bold').setFontSize(11)
       .setHorizontalAlignment('center')
@@ -185,11 +185,11 @@ const BaseInfo = (function() {
 
   function getActiveCoffeePoints() {
     const ss    = _getSS();
-    const sheet = ss.getSheetByName(SHEET_NAME);
+    const sheet = SH_(ss, SHEET_NAME);
 
     if (!sheet) throw new Error(
-      'Лист "Базовая информация" не найден!\n' +
-      'Создайте его: Настройки → Создать "Базовую информацию"'
+      L('Лист "Базовая информация" не найден!\n') +
+      L('Создайте его: Настройки → Создать "Базовую информацию"')
     );
 
     const data = sheet.getDataRange().getValues();
@@ -197,17 +197,17 @@ const BaseInfo = (function() {
 
     for (let i = 0; i < data.length; i++) {
       if (data[i][0] && data[i][0].toString().trim() === 'ID' &&
-          data[i][1] && data[i][1].toString().includes('Название')) {
+          data[i][1] && K(data[i][1]).includes('Название')) {
         cpHeaderRow = i + 1;
       }
-      if (data[i][0] && data[i][0].toString().trim() === 'Активных кофе-поинтов:') {
+      if (data[i][0] && K(data[i][0]) === 'Активных кофе-поинтов:') {
         cpCounterRow = i + 1; break;
       }
     }
 
     if (cpHeaderRow === -1 || cpCounterRow === -1) throw new Error(
-      'Не найдена таблица кофе-поинтов.\n' +
-      'Пересоздайте лист: Настройки → Создать "Базовую информацию"'
+      L('Не найдена таблица кофе-поинтов.\n') +
+      L('Пересоздайте лист: Настройки → Создать "Базовую информацию"')
     );
 
     const coffeePoints = [];
@@ -223,7 +223,7 @@ const BaseInfo = (function() {
 
   function getOfficeConfig() {
     const ss    = _getSS();
-    const sheet = ss.getSheetByName(SHEET_NAME);
+    const sheet = SH_(ss, SHEET_NAME);
     if (!sheet) return null;
 
     const data = sheet.getDataRange().getValues();
@@ -237,7 +237,7 @@ const BaseInfo = (function() {
       'Название чата:':      'telegramChatTitle'
     };
     for (let i = 0; i < data.length; i++) {
-      const label = data[i][0] ? data[i][0].toString().trim() : '';
+      const label = data[i][0] ? K(data[i][0]) : '';
       if (fieldMap[label] !== undefined) config[fieldMap[label]] = data[i][1];
     }
     return config;
@@ -245,11 +245,11 @@ const BaseInfo = (function() {
 
   function updateTelegramStatus(status) {
     const ss    = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(SHEET_NAME);
+    const sheet = SH_(ss, SHEET_NAME);
     if (!sheet) return;
     const data = sheet.getDataRange().getValues();
     for (let i = 0; i < data.length; i++) {
-      if (data[i][0] && data[i][0].toString().trim() === 'Статус:') {
+      if (data[i][0] && K(data[i][0]) === 'Статус:') {
         sheet.getRange(i + 1, 2)
           .setValue(status)
           .setFontColor(status.includes('✅') ? '#0a7a0a' : '#cc0000')
@@ -262,23 +262,23 @@ const BaseInfo = (function() {
 
   function addSupplierRow() {
     const ss    = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(SHEET_NAME);
-    if (!sheet) { SpreadsheetApp.getUi().alert('❌ Лист "Базовая информация" не найден'); return; }
+    const sheet = SH_(ss, SHEET_NAME);
+    if (!sheet) { SpreadsheetApp.getUi().alert(L('❌ Лист "Базовая информация" не найден')); return; }
 
     const data = sheet.getDataRange().getValues();
     let suppColRow = -1;
     for (let i = 0; i < data.length; i++) {
-      if (data[i][0] && data[i][0].toString().toUpperCase().trim() === 'ПОСТАВЩИКИ') {
+      if (data[i][0] && K(data[i][0]).toUpperCase() === 'ПОСТАВЩИКИ') {
         suppColRow = i + 1; break;
       }
     }
-    if (suppColRow === -1) { SpreadsheetApp.getUi().alert('❌ Раздел ПОСТАВЩИКИ не найден'); return; }
+    if (suppColRow === -1) { SpreadsheetApp.getUi().alert(L('❌ Раздел ПОСТАВЩИКИ не найден')); return; }
 
     const STOP_WORDS = ['ИДЕНТИФИКАЦИЯ','КОФЕ-ПОИНТЫ','TELEGRAM',
                         'ПАРАМЕТРЫ','ПРАВИЛА','AI ПРОФИЛЬ','LIVE'];
     let rowCount = 0;
     for (let i = suppColRow + 1; i < data.length; i++) {
-      const v = data[i][0] ? data[i][0].toString().trim().toUpperCase() : '';
+      const v = data[i][0] ? K(data[i][0]).toUpperCase() : '';
       if (STOP_WORDS.some(h => v.startsWith(h))) break;
       rowCount++;
     }
@@ -301,12 +301,12 @@ const BaseInfo = (function() {
 
   function fixSuppliersColors() {
     const ss    = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(SHEET_NAME);
+    const sheet = SH_(ss, SHEET_NAME);
     if (!sheet) return;
     const data = sheet.getDataRange().getValues();
     let suppColRow = -1;
     for (let i = 0; i < data.length; i++) {
-      if (data[i][0] && data[i][0].toString().toUpperCase().trim() === 'ПОСТАВЩИКИ') {
+      if (data[i][0] && K(data[i][0]).toUpperCase() === 'ПОСТАВЩИКИ') {
         suppColRow = i + 1; break;
       }
     }
@@ -316,7 +316,7 @@ const BaseInfo = (function() {
                   'ПАРАМЕТРЫ','ПРАВИЛА','AI ПРОФИЛЬ','LIVE'];
     let pos = 0;
     for (let i = suppColRow + 1; i < data.length; i++) {
-      const v = data[i][0] ? data[i][0].toString().trim().toUpperCase() : '';
+      const v = data[i][0] ? K(data[i][0]).toUpperCase() : '';
       if (STOP.some(h => v.startsWith(h))) break;
       pos++;
       sheet.getRange(i + 1, 1, 1, 5).setBackground(pos % 2 === 1 ? '#ffffff' : '#f0f4ff');
@@ -359,24 +359,24 @@ const BaseInfo = (function() {
 
 function addCoffeePointRow() {
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName('Базовая информация');
-  if (!sheet) { SpreadsheetApp.getUi().alert('❌ Лист "Базовая информация" не найден.'); return; }
+  const sheet = SH_(ss, L('Базовая информация'));
+  if (!sheet) { SpreadsheetApp.getUi().alert(L('❌ Лист "Базовая информация" не найден.')); return; }
 
   const data = sheet.getDataRange().getValues();
   let cpHeaderRow = -1, cpCounterRow = -1;
 
   for (let i = 0; i < data.length; i++) {
     if (data[i][0] && data[i][0].toString().trim() === 'ID' &&
-        data[i][1] && data[i][1].toString().includes('Название')) {
+        data[i][1] && K(data[i][1]).includes('Название')) {
       cpHeaderRow = i + 1;
     }
-    if (data[i][0] && data[i][0].toString().trim() === 'Активных кофе-поинтов:') {
+    if (data[i][0] && K(data[i][0]) === 'Активных кофе-поинтов:') {
       cpCounterRow = i + 1; break;
     }
   }
 
   if (cpHeaderRow === -1 || cpCounterRow === -1) {
-    SpreadsheetApp.getUi().alert('❌ Не найдена таблица кофе-поинтов.');
+    SpreadsheetApp.getUi().alert(L('❌ Не найдена таблица кофе-поинтов.'));
     return;
   }
 
@@ -402,7 +402,7 @@ function addCoffeePointRow() {
     .setFontWeight('bold').setFontColor('#0000FF');
 
   sheet.getRange(newRow, 2).activate();
-  SpreadsheetApp.getUi().alert('✅ Кофе-поинт #' + nextId + ' добавлен!\n\nВведите название в выделенную ячейку.');
+  SpreadsheetApp.getUi().alert(L('✅ Кофе-поинт #') + nextId + L(' добавлен!\n\nВведите название в выделенную ячейку.'));
 }
 
 function createBaseInfoSheet()       { BaseInfo.createSheet();        }
@@ -414,7 +414,7 @@ function onEdit(e) {
   try {
     if (!e || !e.range) return;
     const sheet = e.range.getSheet();
-    if (sheet.getName() !== 'Базовая информация') return;
+    if (K(sheet.getName()) !== 'Базовая информация') return;
     sheet.autoResizeRows(e.range.getRow(), e.range.getNumRows());
   } catch(err) {
     Logger.log('⚠️ onEdit autoResize: ' + err.toString());

@@ -8,9 +8,9 @@ const ORDER_SHEET_NAMES = {
 };
 
 function getOrCreateOrderSheet(ss) {
-  let sheet = ss.getSheetByName(ORDER_SHEET_NAME);
+  let sheet = SH_(ss, ORDER_SHEET_NAME);
   if (!sheet) {
-    sheet = ss.insertSheet(ORDER_SHEET_NAME);
+    sheet = ss.insertSheet(L(ORDER_SHEET_NAME));
     Logger.log('✓ Создан лист "' + ORDER_SHEET_NAME + '"');
   }
   return sheet;
@@ -19,19 +19,19 @@ function getOrCreateOrderSheet(ss) {
 function _getLatestMenuSheet(ss) {
   const todayMenu = MenuManager.findTodaySheet();
   if (todayMenu) return todayMenu.sheet;
-  return ss.getSheetByName('Меню');
+  return SH_(ss, L('Меню'));
 }
 
 function updateOrderSheet() {
   try {
     const ss             = SpreadsheetApp.getActiveSpreadsheet();
-    const warehouseSheet = ss.getSheetByName('Склад_Продукты');
+    const warehouseSheet = SH_(ss, L('Склад_Продукты'));
 
     if (!warehouseSheet) {
       SpreadsheetApp.getUi().alert(
-        'Лист "Склад_Продукты" не найден.\n\n' +
-        'Сначала создайте структуру склада:\n' +
-        'Настройки → Создать структуру склада'
+        L('Лист "Склад_Продукты" не найден.\n\n') +
+        L('Сначала создайте структуру склада:\n') +
+        L('Настройки → Создать структуру склада')
       );
       return;
     }
@@ -48,13 +48,13 @@ function updateOrderSheet() {
 
     orderSheet.getRange(1, 1, 1, 5).merge();
     orderSheet.getRange('A1')
-      .setValue('Заказ продуктов ' + today + (weekPeriod ? ' (' + weekPeriod + ')' : ''))
+      .setValue(L('Заказ продуктов ') + today + (weekPeriod ? ' (' + weekPeriod + ')' : ''))
       .setBackground('#1c4587').setFontColor('#ffffff').setFontWeight('bold')
       .setHorizontalAlignment('center');
     orderSheet.setRowHeight(1, 35);
 
     orderSheet.getRange(2, 1, 1, 5)
-      .setValues([['Позиция', 'Количество', 'Единица измерения', 'Артикул', 'Поставщик']])
+      .setValues([[L('Позиция'), L('Количество'), L('Единица измерения'), L('Артикул'), L('Поставщик')]])
       .setBackground('#4a86e8').setFontColor('#ffffff').setFontWeight('bold')
       .setHorizontalAlignment('center');
     orderSheet.setRowHeight(2, 28);
@@ -63,7 +63,7 @@ function updateOrderSheet() {
     const unitMap = getUnitMapFromWarehouse(warehouseSheet);
     let   row     = 3;
 
-    addSectionHeader(orderSheet, row, '📦 Стандартный ассортимент');
+    addSectionHeader(orderSheet, row, L('📦 Стандартный ассортимент'));
     row++;
     const standardProducts = getStandardProducts(warehouseSheet, unitMap, rotatingCategories);
     standardProducts.forEach(p => {
@@ -74,10 +74,10 @@ function updateOrderSheet() {
     const selectedAssortment = getSelectedAssortmentFromMenu(menuSheet, warehouseSheet);
     if (Object.keys(selectedAssortment).length > 0) {
       row++;
-      addSectionHeader(orderSheet, row, '🗓 По выбору меню (сменные категории)');
+      addSectionHeader(orderSheet, row, L('🗓 По выбору меню (сменные категории)'));
       row++;
       Object.values(selectedAssortment).forEach(product => {
-        if (!product || product === 'Остатки' || product === 'Отсутствует') return;
+        if (!product || isMenuFiller_(product)) return;
         const unit  = unitMap[product] || '';
         const extra = getArticulAndSupplier(warehouseSheet, product);
         writeOrderRow(orderSheet, row, product, unit, extra.articul, extra.supplier);
@@ -95,29 +95,29 @@ function updateOrderSheet() {
     SpreadsheetApp.flush();
 
     SpreadsheetApp.getUi().alert(
-      'Лист "' + ORDER_SHEET_NAME + '" обновлён!\n\n' +
-      'Стандарт: ' + standardProducts.length + ' позиций\n' +
-      'По выбору: ' + Object.keys(selectedAssortment).length + ' позиций\n\n' +
-      'Заполните количество и нажмите:\n' +
-      'Заказы → Продукты → Отправить заказ (Telegram)'
+      L('Лист "') + L(ORDER_SHEET_NAME) + L('" обновлён!\n\n') +
+      L('Стандарт: ') + standardProducts.length + L(' позиций\n') +
+      L('По выбору: ') + Object.keys(selectedAssortment).length + L(' позиций\n\n') +
+      L('Заполните количество и нажмите:\n') +
+      L('Заказы → Продукты → Отправить заказ (Telegram)')
     );
 
   } catch(error) {
     Logger.log('❌ updateOrderSheet: ' + error.toString());
-    SpreadsheetApp.getUi().alert('Ошибка: ' + error.toString());
+    SpreadsheetApp.getUi().alert(L('Ошибка: ') + error.toString());
   }
 }
 
 function sendOrderToTelegramAndUpdateForm() {
   try {
     const ss         = SpreadsheetApp.getActiveSpreadsheet();
-    const orderSheet = ss.getSheetByName(ORDER_SHEET_NAME);
+    const orderSheet = SH_(ss, ORDER_SHEET_NAME);
 
     if (!orderSheet) {
       SpreadsheetApp.getUi().alert(
-        'Лист "' + ORDER_SHEET_NAME + '" не найден.\n\n' +
-        'Сначала сформируйте заказ:\n' +
-        'Заказы → Продукты → Обновить лист заказа'
+        L('Лист "') + L(ORDER_SHEET_NAME) + L('" не найден.\n\n') +
+        L('Сначала сформируйте заказ:\n') +
+        L('Заказы → Продукты → Обновить лист заказа')
       );
       return;
     }
@@ -137,7 +137,7 @@ function sendOrderToTelegramAndUpdateForm() {
     }
 
     if (orderItems.length === 0) {
-      SpreadsheetApp.getUi().alert('Нет позиций с заполненным количеством. Сначала укажите количество.');
+      SpreadsheetApp.getUi().alert(L('Нет позиций с заполненным количеством. Сначала укажите количество.'));
       return;
     }
 
@@ -145,7 +145,7 @@ function sendOrderToTelegramAndUpdateForm() {
     const periodMatch = headerValue.match(/\(([^)]+)\)/);
     const weekPeriod  = periodMatch ? periodMatch[1] : '';
 
-    let officeName = 'Офис';
+    let officeName = L('Офис');
     try {
       const config = BaseInfo.getOfficeConfig();
       if (config && config.officeName) officeName = config.officeName;
@@ -168,15 +168,15 @@ function sendOrderToTelegramAndUpdateForm() {
     }
 
     SpreadsheetApp.getUi().alert(
-      (telegramOk ? '✅ Заказ отправлен в Telegram!\n\n' : '⚠️ Telegram не отправлен.\n\n') +
-      'Форма логиста: ' + (formResult ? formResult.short : 'не обновилась') + '\n\n' +
-      'Форму хозяюшек обновите вручную:\n' +
-      'Заказы → Продукты → Обновить форму хозяюшек'
+      (telegramOk ? L('✅ Заказ отправлен в Telegram!\n\n') : L('⚠️ Telegram не отправлен.\n\n')) +
+      L('Форма логиста: ') + (formResult ? formResult.short : L('не обновилась')) + '\n\n' +
+      L('Форму хозяюшек обновите вручную:\n') +
+      L('Заказы → Продукты → Обновить форму хозяюшек')
     );
 
   } catch(error) {
     Logger.log('❌ sendOrderToTelegramAndUpdateForm: ' + error.toString());
-    SpreadsheetApp.getUi().alert('Ошибка:\n\n' + error.toString());
+    SpreadsheetApp.getUi().alert(L('Ошибка:\n\n') + error.toString());
   }
 }
 
@@ -187,19 +187,19 @@ function updateOrderSheetForWarehouse(warehouseType) {
 
     if (!warehouseSheet) {
       SpreadsheetApp.getUi().alert(
-        'Склад ' + warehouseType + ' не найден.\n\n' +
-        'Сначала создайте структуру склада:\n' +
-        'Настройки → Создать структуру склада'
+        L('Склад ') + warehouseType + L(' не найден.\n\n') +
+        L('Сначала создайте структуру склада:\n') +
+        L('Настройки → Создать структуру склада')
       );
       return;
     }
 
-    const orderSheetName = ORDER_SHEET_NAMES[warehouseType] || ('Заказ_' + warehouseType);
-    let   orderSheet     = ss.getSheetByName(orderSheetName);
+    const orderSheetName = ORDER_SHEET_NAMES[warehouseType] || (L('Заказ_') + warehouseType);
+    let   orderSheet     = SH_(ss, orderSheetName);
     if (orderSheet) {
       orderSheet.clear();
     } else {
-      orderSheet = ss.insertSheet(orderSheetName);
+      orderSheet = ss.insertSheet(L(orderSheetName));
       Logger.log('✓ Создан лист "' + orderSheetName + '"');
     }
 
@@ -209,13 +209,13 @@ function updateOrderSheetForWarehouse(warehouseType) {
 
     orderSheet.getRange(1, 1, 1, 5).merge();
     orderSheet.getRange('A1')
-      .setValue('Заказ ' + warehouseName + ' ' + today)
+      .setValue(L('Заказ ') + warehouseName + ' ' + today)
       .setBackground('#1c4587').setFontColor('#ffffff')
       .setFontWeight('bold').setHorizontalAlignment('center');
     orderSheet.setRowHeight(1, 35);
 
     orderSheet.getRange(2, 1, 1, 5)
-      .setValues([['Позиция', 'Количество', 'Единица измерения', 'Артикул', 'Поставщик']])
+      .setValues([[L('Позиция'), L('Количество'), L('Единица измерения'), L('Артикул'), L('Поставщик')]])
       .setBackground('#4a86e8').setFontColor('#ffffff')
       .setFontWeight('bold').setHorizontalAlignment('center');
     orderSheet.setFrozenRows(2);
@@ -236,24 +236,24 @@ function updateOrderSheetForWarehouse(warehouseType) {
     formatOrderRows(orderSheet, 3, row - 1);
     SpreadsheetApp.flush();
 
-    SpreadsheetApp.getUi().alert('Лист "' + orderSheetName + '" обновлён (' + products.length + ' позиций).');
+    SpreadsheetApp.getUi().alert(L('Лист "') + L(orderSheetName) + L('" обновлён (') + products.length + L(' позиций).'));
 
   } catch(error) {
     Logger.log('❌ updateOrderSheetForWarehouse: ' + error.toString());
-    SpreadsheetApp.getUi().alert('Ошибка: ' + error.toString());
+    SpreadsheetApp.getUi().alert(L('Ошибка: ') + error.toString());
   }
 }
 
 function sendOrderToTelegramForWarehouse(warehouseType) {
   try {
-    const orderSheetName = ORDER_SHEET_NAMES[warehouseType] || ('Заказ_' + warehouseType);
-    const orderSheet     = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(orderSheetName);
+    const orderSheetName = ORDER_SHEET_NAMES[warehouseType] || (L('Заказ_') + warehouseType);
+    const orderSheet     = SH_(SpreadsheetApp.getActiveSpreadsheet(), orderSheetName);
 
     if (!orderSheet) {
       SpreadsheetApp.getUi().alert(
-        'Лист "' + orderSheetName + '" не найден.\n\n' +
-        'Сначала создайте заказ:\n' +
-        'Заказы → Обновить лист заказа'
+        L('Лист "') + L(orderSheetName) + L('" не найден.\n\n') +
+        L('Сначала создайте заказ:\n') +
+        L('Заказы → Обновить лист заказа')
       );
       return;
     }
@@ -273,7 +273,7 @@ function sendOrderToTelegramForWarehouse(warehouseType) {
     }
 
     if (orderItems.length === 0) {
-      SpreadsheetApp.getUi().alert('Нет позиций с заполненным количеством.');
+      SpreadsheetApp.getUi().alert(L('Нет позиций с заполненным количеством.'));
       return;
     }
 
@@ -282,7 +282,7 @@ function sendOrderToTelegramForWarehouse(warehouseType) {
 
     const grouped = {};
     orderItems.forEach(item => {
-      const sup = (item.supplier || '').trim() || 'Без поставщика';
+      const sup = (item.supplier || '').trim() || L('Без поставщика');
       if (!grouped[sup]) grouped[sup] = [];
       grouped[sup].push(item);
     });
@@ -295,17 +295,17 @@ function sendOrderToTelegramForWarehouse(warehouseType) {
       let anyOk = false;
 
       Object.entries(grouped).forEach(([supplier, items]) => {
-        let message = '<b>ЗАКАЗ ' + warehouseName.toUpperCase() + '</b>\n' + today + '\n\n';
+        let message = L('<b>ЗАКАЗ ') + warehouseName.toUpperCase() + '</b>\n' + today + '\n\n';
         message += '<b>' + supplier + '</b>\n';
         items.forEach((item, idx) => {
           const art = item.articul ? ' [' + item.articul + ']' : '';
-          message += (idx + 1) + '. ' + item.name + art + ' — ' + item.qty + ' ' + (item.unit || 'шт') + '\n';
+          message += (idx + 1) + '. ' + item.name + art + ' — ' + item.qty + ' ' + (item.unit || L('шт')) + '\n';
         });
 
         const hasOwnChat = !!supplierChats[supplier];
         const chatId      = hasOwnChat ? supplierChats[supplier] : defaultChatId;
         const threadId    = hasOwnChat ? null : defaultThreadId;
-        if (!hasOwnChat) message += '\n📋 <i>Нет своего Telegram — скопируйте и перешлите вручную</i>';
+        if (!hasOwnChat) message += L('\n📋 <i>Нет своего Telegram — скопируйте и перешлите вручную</i>');
 
         const result = TelegramManager.sendMessage(chatId, message, threadId);
         if (result.ok) anyOk = true;
@@ -333,27 +333,27 @@ function sendOrderToTelegramForWarehouse(warehouseType) {
     }
 
     const hostessHint = warehouseType === 'HOUSEHOLD'
-      ? 'Заказы → Хозтовары → Обновить форму хозяюшек\nЗаказы → Хозтовары → Обновить форму клининга'
+      ? L('Заказы → Хозтовары → Обновить форму хозяюшек\nЗаказы → Хозтовары → Обновить форму клининга')
       : warehouseType === 'STATIONERY'
-      ? 'Заказы → Канцелярия → Обновить форму хозяюшек'
-      : 'Заказы → Медикаменты → Обновить форму хозяюшек';
+      ? L('Заказы → Канцелярия → Обновить форму хозяюшек')
+      : L('Заказы → Медикаменты → Обновить форму хозяюшек');
 
     SpreadsheetApp.getUi().alert(
-      (telegramOk ? '✅ Заказ ' + warehouseName + ' отправлен!\n\n' : '⚠️ Telegram не отправлен.\n\n') +
-      'Форма логиста: ' + (formResult ? formResult.short : 'не обновилась') + '\n\n' +
-      'Формы хозяюшек обновите вручную:\n' + hostessHint
+      (telegramOk ? L('✅ Заказ ') + warehouseName + L(' отправлен!\n\n') : L('⚠️ Telegram не отправлен.\n\n')) +
+      L('Форма логиста: ') + (formResult ? formResult.short : L('не обновилась')) + '\n\n' +
+      L('Формы хозяюшек обновите вручную:\n') + hostessHint
     );
 
   } catch(error) {
     Logger.log('❌ sendOrderToTelegramForWarehouse: ' + error.toString());
-    SpreadsheetApp.getUi().alert('Ошибка: ' + error.toString());
+    SpreadsheetApp.getUi().alert(L('Ошибка: ') + error.toString());
   }
 }
 
 function getStandardProducts(warehouseSheet, unitMap, rotatingCategories) {
   const allCategories     = getAllWarehouseCategories(warehouseSheet);
-  const excludeCategories = ['Алкоголь', ...(rotatingCategories || [])];
-  const standardCats      = allCategories.filter(cat => !excludeCategories.includes(cat));
+  const excludeCategories = ['Алкоголь', ...(rotatingCategories || []).map(K)];
+  const standardCats      = allCategories.filter(cat => !excludeCategories.includes(K(cat)));
   const products          = [];
   for (const cat of standardCats) {
     for (const name of getActiveProductsByCategory(warehouseSheet, cat)) {
@@ -375,17 +375,16 @@ function getSelectedAssortmentFromMenu(menuSheet, warehouseSheet) {
 
   for (let i = 0; i < data.length; i++) {
     const labelRaw = data[i][0] ? data[i][0].toString().trim() : '';
-    if (labelRaw.toUpperCase().includes('ВЫБОР АССОРТИМЕНТА')) { inAssortment = true; continue; }
+    if (isMenuAssortLabel_(labelRaw)) { inAssortment = true; continue; }
     if (inAssortment) {
-      const upper = labelRaw.toUpperCase();
-      if (upper.includes('КРУГЛОСУТОЧНО') || upper.includes('ВРЕМЯ ВЫКЛАДКИ') || upper === 'ВРЕМЯ') break;
+      if (isMenuAlwaysLabel_(labelRaw) || isMenuTimeLabel_(labelRaw)) break;
     }
     if (!inAssortment || !labelRaw) continue;
 
     const rowValues = [];
     for (let col = 1; col < data[i].length; col++) {
       const v = data[i][col] ? data[i][col].toString().trim() : '';
-      if (v && v !== 'Отсутствует' && v !== 'Остатки') rowValues.push(v);
+      if (v && !isMenuFiller_(v)) rowValues.push(v);
     }
     rowValues.forEach(product => {
       if (!allProducts.includes(product) || seen.has(product)) return;
@@ -510,10 +509,10 @@ function collectAllActiveProducts(warehouseSheet, unitMap) {
 
 function getWarehouseSheetByType(warehouseType) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  return WAREHOUSE_SHEET_NAMES[warehouseType] ? ss.getSheetByName(WAREHOUSE_SHEET_NAMES[warehouseType]) : null;
+  return WAREHOUSE_SHEET_NAMES[warehouseType] ? SH_(ss, WAREHOUSE_SHEET_NAMES[warehouseType]) : null;
 }
 
 function getWarehouseDisplayName(warehouseType) {
-  const names = { 'HOUSEHOLD': 'хозтоваров', 'STATIONERY': 'канцелярии', 'MEDICINE': 'медикаментов' };
+  const names = { 'HOUSEHOLD': L('хозтоваров'), 'STATIONERY': L('канцелярии'), 'MEDICINE': L('медикаментов') };
   return names[warehouseType] || warehouseType;
 }

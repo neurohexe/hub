@@ -21,9 +21,9 @@ function doGet(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  return HtmlService
-    .createHtmlOutputFromFile('MenuDisplay')
-    .setTitle('Меню сегодня')
+  return htmlTemplate_('MenuDisplay')
+    .evaluate()
+    .setTitle(L('Меню сегодня'))
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -38,8 +38,8 @@ function saveMenuDataToStorage(sheet, nextWeek) {
     let weekLabel = '';
     if (data[0] && data[0][0]) {
       const h = data[0][0].toString();
-      const m = h.match(/с\s+(\d+\.\d+)\s+по\s+(\d+\.\d+)/);
-      if (m) weekLabel = 'с ' + m[1] + ' по ' + m[2];
+      const m = h.match(/(?:с|from)\s+(\d+\.\d+)\s+(?:по|to)\s+(\d+\.\d+)/i);
+      if (m) weekLabel = L('с ') + m[1] + L(' по ') + m[2];
     }
     if (!weekLabel) {
       const nm = sheet.getName().match(/(\d{2}\.\d{2})-(\d{2}\.\d{2})/);
@@ -67,7 +67,7 @@ function saveMenuDataToStorage(sheet, nextWeek) {
 function forceSaveMenuDataFromSheets() {
   const menus = MenuManager.findMenuSheets();
   if (menus.length === 0) {
-    SpreadsheetApp.getUi().alert('❌ Листы меню не найдены');
+    SpreadsheetApp.getUi().alert(L('❌ Листы меню не найдены'));
     return;
   }
 
@@ -80,7 +80,7 @@ function forceSaveMenuDataFromSheets() {
     Logger.log('✅ Сохранён ' + (isNext ? 'NEXT' : 'CURRENT') + ': ' + menu.name);
   });
 
-  SpreadsheetApp.getUi().alert('✅ Данные меню сохранены!\n\nПланшеты обновятся при следующем открытии.');
+  SpreadsheetApp.getUi().alert(L('✅ Данные меню сохранены!\n\nПланшеты обновятся при следующем открытии.'));
 }
 
 function getWeekPeriodFromStorage() {
@@ -111,8 +111,8 @@ function getTodayMenuData() {
     const todayDate  = _getTodayDateFull();
     const todayIdx   = _getTodayDayIndex();
 
-    const MONTHS = ['января','февраля','марта','апреля','мая','июня',
-                    'июля','августа','сентября','октября','ноября','декабря'];
+    const MONTHS = [L('января'),L('февраля'),L('марта'),L('апреля'),L('мая'),L('июня'),
+                    L('июля'),L('августа'),L('сентября'),L('октября'),L('ноября'),L('декабря')];
     const now = new Date();
     const todayFormatted = now.getDate() + ' ' + MONTHS[now.getMonth()];
 
@@ -150,7 +150,7 @@ function getTodayMenuData() {
     const todayMenu = MenuManager.findTodaySheet();
     if (!todayMenu) {
       return { todayName, todayDate, weekLabel: '', officeName,
-               timings: [], alwaysOn: [], error: 'Меню не найдено' };
+               timings: [], alwaysOn: [], error: L('Меню не найдено') };
     }
 
     Logger.log('getTodayMenuData: используем лист "' + todayMenu.name + '"');
@@ -196,8 +196,8 @@ function getWeekMenuData() {
 
     if (allDays.length > 0) {
 
-      const MONTHS = ['января','февраля','марта','апреля','мая','июня',
-                      'июля','августа','сентября','октября','ноября','декабря'];
+      const MONTHS = [L('января'),L('февраля'),L('марта'),L('апреля'),L('мая'),L('июня'),
+                      L('июля'),L('августа'),L('сентября'),L('октября'),L('ноября'),L('декабря')];
       const now = new Date();
       const todayFormatted = now.getDate() + ' ' + MONTHS[now.getMonth()];
 
@@ -225,8 +225,8 @@ function getWeekMenuData() {
       days.push(...dayData);
     });
 
-    const MONTHS2 = ['января','февраля','марта','апреля','мая','июня',
-                     'июля','августа','сентября','октября','ноября','декабря'];
+    const MONTHS2 = [L('января'),L('февраля'),L('марта'),L('апреля'),L('мая'),L('июня'),
+                     L('июля'),L('августа'),L('сентября'),L('октября'),L('ноября'),L('декабря')];
     const now2 = new Date();
     const todayFormatted2 = now2.getDate() + ' ' + MONTHS2[now2.getMonth()];
 
@@ -247,9 +247,9 @@ function getWeekMenuData() {
 }
 
 function _buildWeekDays(data, todayIdx, today) {
-  const DAY_NAMES = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
-  const MONTHS    = ['января','февраля','марта','апреля','мая','июня',
-                     'июля','августа','сентября','октября','ноября','декабря'];
+  const DAY_NAMES = [L('Понедельник'),L('Вторник'),L('Среда'),L('Четверг'),L('Пятница'),L('Суббота'),L('Воскресенье')];
+  const MONTHS    = [L('января'),L('февраля'),L('марта'),L('апреля'),L('мая'),L('июня'),
+                     L('июля'),L('августа'),L('сентября'),L('октября'),L('ноября'),L('декабря')];
 
   const alwaysByDay = { 0:[], 1:[], 2:[], 3:[], 4:[], 5:[], 6:[] };
   let inAlways = false;
@@ -257,8 +257,8 @@ function _buildWeekDays(data, todayIdx, today) {
   for (let i = 1; i < data.length; i++) {
     const c0    = _str(data[i][0]);
     const c0lo  = c0.toLowerCase();
-    if (c0lo.includes('круглосуточно')) { inAlways = true; continue; }
-    if (c0lo.includes('время выкладки') || c0lo === 'время') { inAlways = false; break; }
+    if (isMenuAlwaysLabel_(c0)) { inAlways = true; continue; }
+    if (isMenuTimeLabel_(c0)) { inAlways = false; break; }
     if (!inAlways) continue;
 
     const vals = [];
@@ -273,9 +273,10 @@ function _buildWeekDays(data, todayIdx, today) {
         vals.forEach(v => { if (!alwaysByDay[d].includes(v)) alwaysByDay[d].push(v); });
       }
     } else {
-      const DAY_ABBR = { 'пн':0,'вт':1,'ср':2,'чт':3,'пт':4,'сб':5,'вс':6 };
+      const DAY_ABBR = { 'пн':0,'вт':1,'ср':2,'чт':3,'пт':4,'сб':5,'вс':6,
+                       'mon':0,'tue':1,'wed':2,'thu':3,'fri':4,'sat':5,'sun':6 };
       const c0norm = c0lo.replace(/\s+/g, ' ').trim();
-      const m = c0norm.match(/^с\s+([а-яё]+)\s+по\s+([а-яё]+)/i);
+      const m = c0norm.match(/^(?:с|from)\s+([а-яёa-z]+)\s+(?:по|to)\s+([а-яёa-z]+)/i);
       if (m && DAY_ABBR[m[1]] !== undefined && DAY_ABBR[m[2]] !== undefined) {
         const from = DAY_ABBR[m[1]], to = DAY_ABBR[m[2]];
         for (let d = from; d <= to; d++) {
@@ -300,7 +301,7 @@ function _buildWeekDays(data, todayIdx, today) {
     const c0   = _str(row[0]);
     const c0lo = c0.toLowerCase();
 
-    if (c0lo.includes('время выкладки') || c0lo === 'время') { inSchedule = true; continue; }
+    if (isMenuTimeLabel_(c0)) { inSchedule = true; continue; }
     if (!inSchedule) continue;
 
     const isDayHeader = (row[0] instanceof Date) || _isDayHeaderText(c0);
@@ -316,7 +317,7 @@ function _buildWeekDays(data, todayIdx, today) {
 
       if (row[0] instanceof Date) {
         const d = row[0];
-        name    = DAY_NAMES[dayCounter] || ('День ' + (dayCounter + 1));
+        name    = DAY_NAMES[dayCounter] || (L('День ') + (dayCounter + 1));
         dateStr = d.getDate() + ' ' + MONTHS[d.getMonth()];
         const rowDate   = new Date(d); rowDate.setHours(0,0,0,0);
         const todayCopy = new Date(today); todayCopy.setHours(0,0,0,0);
@@ -370,8 +371,8 @@ function _parse(data, todayIdx, officeName, todayName, todayDate) {
 
   if (data[0] && data[0][0]) {
     const h = data[0][0].toString();
-    const m = h.match(/с\s+(\d+\.\d+)\s+по\s+(\d+\.\d+)/);
-    if (m) result.weekLabel = 'с ' + m[1] + ' по ' + m[2];
+    const m = h.match(/(?:с|from)\s+(\d+\.\d+)\s+(?:по|to)\s+(\d+\.\d+)/i);
+    if (m) result.weekLabel = L('с ') + m[1] + L(' по ') + m[2];
   }
 
   let mode = 'skip', dayCounter = -1, inToday = false, currentTiming = null;
@@ -379,12 +380,12 @@ function _parse(data, todayIdx, officeName, todayName, todayDate) {
   for (let i = 1; i < data.length; i++) {
     const row = data[i], c0 = _str(row[0]), c0lo = c0.toLowerCase();
 
-    if (c0lo.includes('круглосуточно')) {
+    if (isMenuAlwaysLabel_(c0)) {
       mode = 'always';
       if (currentTiming) { _pushTiming(result, currentTiming); currentTiming = null; }
       continue;
     }
-    if (c0lo.includes('время выкладки') || c0lo === 'время') {
+    if (isMenuTimeLabel_(c0)) {
       mode = 'schedule'; dayCounter = -1; inToday = false;
       if (currentTiming) { _pushTiming(result, currentTiming); currentTiming = null; }
       continue;
@@ -443,8 +444,9 @@ function _parse(data, todayIdx, officeName, todayName, todayDate) {
 
 function _periodApplies(period, todayIdx) {
   if (!period) return true;
-  const DAY_ABBR = { 'пн':0,'вт':1,'ср':2,'чт':3,'пт':4,'сб':5,'вс':6 };
-  const m = period.toLowerCase().match(/с\s+([а-я]+)\s+по\s+([а-я]+)/);
+  const DAY_ABBR = { 'пн':0,'вт':1,'ср':2,'чт':3,'пт':4,'сб':5,'вс':6,
+                       'mon':0,'tue':1,'wed':2,'thu':3,'fri':4,'sat':5,'sun':6 };
+  const m = period.toLowerCase().match(/(?:с|from)\s+([а-яёa-z]+)\s+(?:по|to)\s+([а-яёa-z]+)/);
   if (!m) return true;
   const from = DAY_ABBR[m[1]], to = DAY_ABBR[m[2]];
   if (from === undefined || to === undefined) return true;
@@ -466,7 +468,7 @@ function _str(val) {
 
 function _cleanVal(val) {
   const s = _str(val);
-  if (!s || s === 'Остатки' || s === 'Отсутствует') return '';
+  if (!s || isMenuFiller_(s)) return '';
   return s;
 }
 
@@ -476,26 +478,27 @@ function _getTodayDayIndex() {
 }
 
 function _getTodayName() {
-  return ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'][new Date().getDay()];
+  return [L('Воскресенье'),L('Понедельник'),L('Вторник'),L('Среда'),L('Четверг'),L('Пятница'),L('Суббота')][new Date().getDay()];
 }
 
 function _getTodayDateFull() {
   const now    = new Date();
-  const months = ['января','февраля','марта','апреля','мая','июня',
-                  'июля','августа','сентября','октября','ноября','декабря'];
+  const months = [L('января'),L('февраля'),L('марта'),L('апреля'),L('мая'),L('июня'),
+                  L('июля'),L('августа'),L('сентября'),L('октября'),L('ноября'),L('декабря')];
   return now.getDate() + ' ' + months[now.getMonth()];
 }
 
 function _isDayHeaderText(str) {
   if (!str) return false;
   const lo = str.toLowerCase();
-  const DAY_WORDS = ['понедельник','вторник','среда','четверг','пятница','суббота','воскресенье'];
+  const DAY_WORDS = ['понедельник','вторник','среда','четверг','пятница','суббота','воскресенье',
+                     'monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
   return DAY_WORDS.some(d => lo.startsWith(d)) && /\d{2}\.\d{2}\.\d{4}/.test(str);
 }
 
 function _parseDayHeaderText(str) {
-  const MONTHS = ['января','февраля','марта','апреля','мая','июня',
-                  'июля','августа','сентября','октября','ноября','декабря'];
+  const MONTHS = [L('января'),L('февраля'),L('марта'),L('апреля'),L('мая'),L('июня'),
+                  L('июля'),L('августа'),L('сентября'),L('октября'),L('ноября'),L('декабря')];
   const m = str.match(/(\d{2})\.(\d{2})\.(\d{4})/);
   if (!m) return { dayName: str, dateStr: '', dateRaw: '' };
   const day      = parseInt(m[1]);
