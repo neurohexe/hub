@@ -1,8 +1,11 @@
 function onOpen() {
+  const ui  = SpreadsheetApp.getUi();
+  // Кнопка языка — первой и в try: если ниже что-то упадёт, переключатель всё равно останется
+  try { addLanguageMenu_(ui); } catch (e) { Logger.log('⚠️ language menu: ' + e); }
+
   updateAllWarehouseDates();
   updateAllDashboardDates();
 
-  const ui  = SpreadsheetApp.getUi();
   const hub = isHubMode();
 
   if (!hub) {
@@ -102,8 +105,6 @@ function onOpen() {
       .addItem(L('Конец дня (архив + сброс)'),       'endOfDayManual');
   }
   settingsMenu.addToUi();
-
-  addLanguageMenu_(ui);
 }
 
 function setupAllTriggersWrapper() {
