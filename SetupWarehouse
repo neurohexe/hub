@@ -204,6 +204,7 @@ function _createStationerySheet() {
 
   sheet.setFrozenRows(2);
   SpreadsheetApp.flush(); 
+  updateAllWarehouseDates();
   ui.alert('✅ Склад канцелярии создан!');
   sheet.activate();
 }
@@ -290,6 +291,7 @@ function createWarehouseSheet(warehouseType, categories) {
 
   sheet.setFrozenRows(2);
   SpreadsheetApp.flush(); 
+  updateAllWarehouseDates();
 
   const supplierNote = suppliers.length > 0
     ? '\n✅ Загружено поставщиков: ' + suppliers.length

@@ -23,6 +23,7 @@ const HouseholdWarehouse = (function() {
     }
     sheet = ss.insertSheet(SHEET_NAME);
     _buildSheet(sheet);
+    updateAllWarehouseDates();
     ui.alert('Склад хозтоваров создан!\n\nG — Хозяюшки\nH — Клининг');
     sheet.activate();
   }
