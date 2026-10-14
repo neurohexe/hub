@@ -1,0 +1,54 @@
+// ProductMenu.gs
+
+const ProductMenu = (function() {
+
+  function getCategories() {
+    return getProductCategoriesList();
+  }
+
+  function getProductsByCategory(warehouseSheet, category) {
+    const data     = warehouseSheet.getDataRange().getValues();
+    const products = [];
+    let inCategory = false;
+
+    for (let i = 1; i < data.length; i++) {
+      const productName = data[i][0] ? data[i][0].toString().trim() : '';
+      const quantity    = data[i][1];
+      const unit        = data[i][2];
+      const active      = data[i][3];
+
+      const isCategoryRow = (quantity === '' || quantity === null)
+                         && (unit === ''     || unit === null)
+                         && (active === ''   || active === false || active === null);
+
+      if (isCategoryRow && productName !== '') {
+        if (productName === category) {
+          inCategory = true;
+        } else if (inCategory) {
+          break; 
+        }
+        continue;
+      }
+
+      if (inCategory && productName !== '' && active === true) {
+        products.push({
+          name:     productName,
+          category: category,
+          stock:    parseFloat(quantity) || 0,
+          unit:     unit ? unit.toString().trim() : ''
+        });
+      }
+    }
+    return products;
+  }
+
+  function isCategoryValid(category) {
+    return getProductCategoriesList().includes(category);
+  }
+
+  return {
+    getCategories:         getCategories,
+    getProductsByCategory: getProductsByCategory,
+    isCategoryValid:       isCategoryValid
+  };
+})();
