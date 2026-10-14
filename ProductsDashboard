@@ -167,7 +167,7 @@ function readStockFromWarehouse(sheet) {
   const headers = data[1];
   let stockColIdx = -1;
   for (let c = 0; c < headers.length; c++) {
-    const h = headers[c] ? headers[c].toString().toLowerCase().trim() : '';
+    const h = headers[c] ? hdrRu_(headers[c]).toLowerCase() : '';
     if (h === 'количество') { stockColIdx = c; break; }
   }
   if (stockColIdx === -1) stockColIdx = 1;

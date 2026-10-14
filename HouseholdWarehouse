@@ -9,7 +9,7 @@ const HouseholdWarehouse = (function() {
 
   function findCol(headers, name) {
     for (let i = 0; i < headers.length; i++) {
-      if (headers[i] && headers[i].toString().trim() === name) return i;
+      if (headers[i] && hdrRu_(headers[i]) === name) return i;
     }
     return -1;
   }

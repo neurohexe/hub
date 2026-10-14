@@ -1,0 +1,142 @@
+// Language.gs
+// Переключатель языка интерфейса RU / EN.
+// Переводятся: меню и шапка листов складов (строки 1–2).
+// НЕ переводятся (это ключи логики): имена листов, категории, товары, единицы, поставщики.
+
+const LANG_PROP = 'UI_LANG';
+
+/** Шапка листов складов: русский (канон для кода) → английский. */
+const WAREHOUSE_HEADERS_EN = {
+  'Название продукта': 'Product name',
+  'Количество':        'Quantity',
+  'Единица измерения': 'Unit',
+  'Активность':        'Active',
+  'Артикул':           'SKU',
+  'Поставщик':         'Supplier',
+  'Хозяюшки':          'Housekeepers',
+  'Клининг':           'Cleaning',
+  'Выдаётся':          'Issued'
+};
+
+const WAREHOUSE_HEADERS_RU = Object.keys(WAREHOUSE_HEADERS_EN).reduce((acc, ru) => {
+  acc[WAREHOUSE_HEADERS_EN[ru].toLowerCase()] = ru;
+  return acc;
+}, {});
+
+/** Тексты меню: русский → английский. Чего нет в словаре — остаётся по-русски. */
+const UI_EN = {
+  // Склады
+  'Управление складами': 'Warehouses',
+  'Продукты': 'Food', 'Хозтовары': 'Household', 'Канцелярия': 'Stationery', 'Медикаменты': 'Medicine',
+  'Выдать со склада': 'Issue from stock',
+  'Подтвердить поставку': 'Confirm delivery',
+  'Добавить категорию': 'Add category',
+  'Добавление строк': 'Add rows',
+  'Починить строки склада': 'Repair warehouse rows',
+  'Ссылки на формы': 'Form links',
+  // Заказы
+  'Заказы': 'Orders',
+  'Обновить форму хозяюшек': 'Update housekeepers form',
+  'Обновить форму клининга': 'Update cleaning form',
+  'Обновить лист заказа': 'Update order sheet',
+  'Отправить заказ (Telegram)': 'Send order (Telegram)',
+  'Обновить дашборд': 'Refresh dashboard',
+  // Хаб
+  'Хаб — остатки и заказы': 'Hub — stock & orders',
+  'Обновить форму остатков': 'Update stock form',
+  'Менеджер для подтверждения заказов': 'Order approval manager',
+  'Массово добавить ассортимент': 'Bulk add assortment',
+  'Добавить категорию (на текущем складе)': 'Add category (current warehouse)',
+  'Добавление строк (на текущем складе)': 'Add rows (current warehouse)',
+  'Скрыть неиспользуемые листы (дашборды/БД)': 'Hide unused sheets (dashboards/DB)',
+  // Меню
+  'Меню': 'Menu',
+  'Создать меню на следующую неделю': 'Create next week menu',
+  'Конструктор меню': 'Menu builder',
+  'Сохранить меню для планшетов': 'Save menu for tablets',
+  'Обновить ассортимент в меню': 'Refresh menu assortment',
+  '🎲 Заполнить ассортимент по остаткам': '🎲 Fill assortment from stock',
+  // Настройки
+  'Настройки': 'Settings',
+  'Первоначальная настройка': 'Initial setup',
+  'Создать "Базовую информацию"': 'Create "Base info"',
+  'Создать структуру склада': 'Create warehouse structure',
+  'Установить все триггеры': 'Install all triggers',
+  'Тип объекта (Полный / Хаб)': 'Site type (Full / Hub)',
+  'Поставщики': 'Suppliers',
+  'Добавить поставщика': 'Add supplier',
+  'Обновить поставщиков на складах': 'Update suppliers on warehouses',
+  'Единицы измерения': 'Units',
+  'Управление единицами': 'Manage units',
+  'Обновить единицы на складах': 'Update units on warehouses',
+  'Настроить Telegram': 'Set up Telegram',
+  'Настроить тему (топик) чата': 'Set chat topic',
+  'Статус Telegram': 'Telegram status',
+  'Настроить Webhook': 'Set up webhook',
+  'Подключить AI-классификатор': 'Connect AI classifier',
+  'Архивировать все склады сейчас': 'Archive all warehouses now',
+  'Конец дня (архив + сброс)': 'End of day (archive + reset)'
+};
+
+function getLang() {
+  return PropertiesService.getDocumentProperties().getProperty(LANG_PROP) === 'en' ? 'en' : 'ru';
+}
+
+/** Перевод текста интерфейса на текущий язык. */
+function L(ru) {
+  return getLang() === 'en' && UI_EN[ru] ? UI_EN[ru] : ru;
+}
+
+/** Заголовок колонки склада → русский канон (понимает и RU, и EN). */
+function hdrRu_(h) {
+  const s = (h == null ? '' : h).toString().trim();
+  return WAREHOUSE_HEADERS_RU[s.toLowerCase()] || s;
+}
+
+/** Заголовок A1 листа склада на текущем языке. */
+function warehouseTitle_(key, today) {
+  const name = WAREHOUSE_TYPES[key].name;
+  return getLang() === 'en'
+    ? L(name) + ' warehouse data as of ' + today
+    : 'Данные ' + name.toLowerCase() + ' склада на ' + today;
+}
+
+/** Переводит строку 2 (шапку) всех листов складов на текущий язык. */
+function applyLanguageToWarehouseHeaders_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const en = getLang() === 'en';
+  Object.values(WAREHOUSE_SHEET_NAMES).forEach(name => {
+    const sheet = ss.getSheetByName(name);
+    if (!sheet || sheet.getLastRow() < 2 || sheet.getLastColumn() < 1) return;
+    const range = sheet.getRange(2, 1, 1, sheet.getLastColumn());
+    const row   = range.getValues()[0];
+    let changed = false;
+    const out = row.map(v => {
+      const ru = hdrRu_(v);
+      if (!WAREHOUSE_HEADERS_EN[ru]) return v;
+      const target = en ? WAREHOUSE_HEADERS_EN[ru] : ru;
+      if (target !== v) changed = true;
+      return target;
+    });
+    if (changed) range.setValues([out]);
+  });
+}
+
+/** Кнопка переключения языка (пункт меню 🌐). */
+function toggleLanguage() {
+  const next = getLang() === 'en' ? 'ru' : 'en';
+  PropertiesService.getDocumentProperties().setProperty(LANG_PROP, next);
+  updateAllWarehouseDates();
+  SpreadsheetApp.getActiveSpreadsheet().toast(
+    next === 'en' ? 'Reload the page (F5) to switch the menus to English.'
+                  : 'Обновите страницу (F5), чтобы меню переключилось на русский.',
+    next === 'en' ? '🌐 English' : '🌐 Русский', 8);
+}
+
+/** Меню-переключатель: показывает текущий язык, пункт — переключиться на другой. */
+function addLanguageMenu_(ui) {
+  const en = getLang() === 'en';
+  ui.createMenu(en ? '🌐 EN | ru' : '🌐 RU | en')
+    .addItem(en ? 'Переключить на русский' : 'Switch to English', 'toggleLanguage')
+    .addToUi();
+}

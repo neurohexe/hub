@@ -6,102 +6,104 @@ function onOpen() {
   const hub = isHubMode();
 
   if (!hub) {
-    const warehouseMenu = ui.createMenu('Управление складами');
+    const warehouseMenu = ui.createMenu(L('Управление складами'));
     Object.keys(WAREHOUSE_TYPES).forEach(key => {
       const wh = WAREHOUSE_TYPES[key];
       warehouseMenu.addSubMenu(
-        ui.createMenu(wh.name)
-          .addItem('Выдать со склада',         'showIssueDialog_'          + key)
-          .addItem('Подтвердить поставку',      'showDeliveryConfirmDialog_' + key)
+        ui.createMenu(L(wh.name))
+          .addItem(L('Выдать со склада'),         'showIssueDialog_'          + key)
+          .addItem(L('Подтвердить поставку'),      'showDeliveryConfirmDialog_' + key)
           .addSeparator()
-          .addItem('Добавить категорию',        'addNewCategoryToWarehouse')
-          .addItem('Добавление строк',          'quickAddMultipleProductsInCurrentSheet')
-          .addItem('Починить строки склада',    'repairWarehouseRowsInCurrentSheet')
+          .addItem(L('Добавить категорию'),        'addNewCategoryToWarehouse')
+          .addItem(L('Добавление строк'),          'quickAddMultipleProductsInCurrentSheet')
+          .addItem(L('Починить строки склада'),    'repairWarehouseRowsInCurrentSheet')
           .addSeparator()
-          .addItem('Ссылки на формы',           'showFormLinks_' + key)
+          .addItem(L('Ссылки на формы'),           'showFormLinks_' + key)
       );
     });
     warehouseMenu.addToUi();
 
-    ui.createMenu('Заказы')
-      .addSubMenu(ui.createMenu('Продукты')
-        .addItem('Обновить форму хозяюшек',   'updateFormForHousekeepers')
-        .addItem('Обновить лист заказа',       'updateOrderSheetWrapper')
-        .addItem('Отправить заказ (Telegram)', 'sendOrderToTelegramWrapper')
+    ui.createMenu(L('Заказы'))
+      .addSubMenu(ui.createMenu(L('Продукты'))
+        .addItem(L('Обновить форму хозяюшек'),   'updateFormForHousekeepers')
+        .addItem(L('Обновить лист заказа'),       'updateOrderSheetWrapper')
+        .addItem(L('Отправить заказ (Telegram)'), 'sendOrderToTelegramWrapper')
         .addSeparator()
-        .addItem('Обновить дашборд',           'refreshProductsDashboardWrapper'))
-      .addSubMenu(ui.createMenu('Хозтовары')
-        .addItem('Обновить форму хозяюшек',   'updateHouseholdHostessFormManual')
-        .addItem('Обновить форму клининга',    'updateHouseholdCleaningFormManual')
-        .addItem('Обновить лист заказа',       'updateOrderSheetHousehold')
-        .addItem('Отправить заказ (Telegram)', 'sendOrderTelegramHousehold')
+        .addItem(L('Обновить дашборд'),           'refreshProductsDashboardWrapper'))
+      .addSubMenu(ui.createMenu(L('Хозтовары'))
+        .addItem(L('Обновить форму хозяюшек'),   'updateHouseholdHostessFormManual')
+        .addItem(L('Обновить форму клининга'),    'updateHouseholdCleaningFormManual')
+        .addItem(L('Обновить лист заказа'),       'updateOrderSheetHousehold')
+        .addItem(L('Отправить заказ (Telegram)'), 'sendOrderTelegramHousehold')
         .addSeparator()
-        .addItem('Обновить дашборд',           'refreshHouseholdDashboardWrapper'))
-      .addSubMenu(ui.createMenu('Канцелярия')
-        .addItem('Обновить форму хозяюшек',   'updateStationeryHostessFormManual')
-        .addItem('Обновить лист заказа',       'updateOrderSheetStationery')
-        .addItem('Отправить заказ (Telegram)', 'sendOrderTelegramStationery')
+        .addItem(L('Обновить дашборд'),           'refreshHouseholdDashboardWrapper'))
+      .addSubMenu(ui.createMenu(L('Канцелярия'))
+        .addItem(L('Обновить форму хозяюшек'),   'updateStationeryHostessFormManual')
+        .addItem(L('Обновить лист заказа'),       'updateOrderSheetStationery')
+        .addItem(L('Отправить заказ (Telegram)'), 'sendOrderTelegramStationery')
         .addSeparator()
-        .addItem('Обновить дашборд',           'refreshStationeryDashboardWrapper'))
-      .addSubMenu(ui.createMenu('Медикаменты')
-        .addItem('Обновить форму хозяюшек',   'updateMedicineHostessFormManual')
-        .addItem('Обновить лист заказа',       'updateOrderSheetMedicine')
-        .addItem('Отправить заказ (Telegram)', 'sendOrderTelegramMedicine')
+        .addItem(L('Обновить дашборд'),           'refreshStationeryDashboardWrapper'))
+      .addSubMenu(ui.createMenu(L('Медикаменты'))
+        .addItem(L('Обновить форму хозяюшек'),   'updateMedicineHostessFormManual')
+        .addItem(L('Обновить лист заказа'),       'updateOrderSheetMedicine')
+        .addItem(L('Отправить заказ (Telegram)'), 'sendOrderTelegramMedicine')
         .addSeparator()
-        .addItem('Обновить дашборд',           'refreshMedicineDashboardWrapper'))
+        .addItem(L('Обновить дашборд'),           'refreshMedicineDashboardWrapper'))
       .addToUi();
   } else {
-    ui.createMenu('Хаб — остатки и заказы')
-      .addItem('Обновить форму остатков',              'updateHubStockFormManual')
-      .addItem('Менеджер для подтверждения заказов',   'setResponsibleChatIdRow')
-      .addItem('Массово добавить ассортимент',          'bulkImportAssortmentManual')
+    ui.createMenu(L('Хаб — остатки и заказы'))
+      .addItem(L('Обновить форму остатков'),              'updateHubStockFormManual')
+      .addItem(L('Менеджер для подтверждения заказов'),   'setResponsibleChatIdRow')
+      .addItem(L('Массово добавить ассортимент'),          'bulkImportAssortmentManual')
       .addSeparator()
-      .addItem('Добавить категорию (на текущем складе)',         'addNewCategoryToWarehouse')
-      .addItem('Добавление строк (на текущем складе)',           'quickAddMultipleProductsInCurrentSheet')
+      .addItem(L('Добавить категорию (на текущем складе)'),         'addNewCategoryToWarehouse')
+      .addItem(L('Добавление строк (на текущем складе)'),           'quickAddMultipleProductsInCurrentSheet')
       .addSeparator()
-      .addItem('Скрыть неиспользуемые листы (дашборды/БД)',      'hideHubUnusedSheetsManual')
+      .addItem(L('Скрыть неиспользуемые листы (дашборды/БД)'),      'hideHubUnusedSheetsManual')
       .addToUi();
   }
 
-  ui.createMenu('Меню')
-    .addItem('Создать меню на следующую неделю', 'createNextWeekMenuWrapper')
-    .addItem('Конструктор меню',                 'openMenuConstructorWrapper')
+  ui.createMenu(L('Меню'))
+    .addItem(L('Создать меню на следующую неделю'), 'createNextWeekMenuWrapper')
+    .addItem(L('Конструктор меню'),                 'openMenuConstructorWrapper')
     .addSeparator()
-    .addItem('Сохранить меню для планшетов',     'forceSaveMenuDataFromSheets')
-    .addItem('Обновить ассортимент в меню',      'refreshMenuAssortment')
+    .addItem(L('Сохранить меню для планшетов'),     'forceSaveMenuDataFromSheets')
+    .addItem(L('Обновить ассортимент в меню'),      'refreshMenuAssortment')
     .addSeparator()
-    .addItem('🎲 Заполнить ассортимент по остаткам', 'autoFillMenuByStock')
+    .addItem(L('🎲 Заполнить ассортимент по остаткам'), 'autoFillMenuByStock')
     .addToUi();
 
-  let settingsMenu = ui.createMenu('Настройки')
-    .addSubMenu(ui.createMenu('Первоначальная настройка')
-      .addItem('Создать "Базовую информацию"',    'createBaseInfoSheet')
-      .addItem('Создать структуру склада',         'createWarehouseStructure')
-      .addItem('Массово добавить ассортимент',     'bulkImportAssortmentManual')
-      .addItem('Установить все триггеры',          'setupAllTriggersWrapper')
-      .addItem('Тип объекта (Полный / Хаб)',       'chooseOfficeModeDialog'))
+  let settingsMenu = ui.createMenu(L('Настройки'))
+    .addSubMenu(ui.createMenu(L('Первоначальная настройка'))
+      .addItem(L('Создать "Базовую информацию"'),    'createBaseInfoSheet')
+      .addItem(L('Создать структуру склада'),         'createWarehouseStructure')
+      .addItem(L('Массово добавить ассортимент'),     'bulkImportAssortmentManual')
+      .addItem(L('Установить все триггеры'),          'setupAllTriggersWrapper')
+      .addItem(L('Тип объекта (Полный / Хаб)'),       'chooseOfficeModeDialog'))
     .addSeparator()
-    .addSubMenu(ui.createMenu('Поставщики')
-      .addItem('Добавить поставщика',             'addSupplierRowWrapper')
-      .addItem('Обновить поставщиков на складах', 'updateSupplierDropdownsManual'))
-    .addSubMenu(ui.createMenu('Единицы измерения')
-      .addItem('Управление единицами',        'manageUnits')
-      .addItem('Обновить единицы на складах', 'updateUnitsOnWarehouses'))
-    .addSubMenu(ui.createMenu('Telegram')
-      .addItem('Настроить Telegram',          'connectTelegramChatWrapper')
-      .addItem('Настроить тему (топик) чата', 'setDefaultThreadIdWrapper')
-      .addItem('Статус Telegram',             'showTelegramStatusWrapper')
-      .addItem('Настроить Webhook',           'setupTelegramWebhookWrapper'))
-    .addSubMenu(ui.createMenu('AI')
-      .addItem('Подключить AI-классификатор', 'connectAIClassifierKey'));
+    .addSubMenu(ui.createMenu(L('Поставщики'))
+      .addItem(L('Добавить поставщика'),             'addSupplierRowWrapper')
+      .addItem(L('Обновить поставщиков на складах'), 'updateSupplierDropdownsManual'))
+    .addSubMenu(ui.createMenu(L('Единицы измерения'))
+      .addItem(L('Управление единицами'),        'manageUnits')
+      .addItem(L('Обновить единицы на складах'), 'updateUnitsOnWarehouses'))
+    .addSubMenu(ui.createMenu(L('Telegram'))
+      .addItem(L('Настроить Telegram'),          'connectTelegramChatWrapper')
+      .addItem(L('Настроить тему (топик) чата'), 'setDefaultThreadIdWrapper')
+      .addItem(L('Статус Telegram'),             'showTelegramStatusWrapper')
+      .addItem(L('Настроить Webhook'),           'setupTelegramWebhookWrapper'))
+    .addSubMenu(ui.createMenu(L('AI'))
+      .addItem(L('Подключить AI-классификатор'), 'connectAIClassifierKey'));
 
   if (!hub) {
     settingsMenu = settingsMenu
       .addSeparator()
-      .addItem('Архивировать все склады сейчас', 'archiveAllWarehousesManual')
-      .addItem('Конец дня (архив + сброс)',       'endOfDayManual');
+      .addItem(L('Архивировать все склады сейчас'), 'archiveAllWarehousesManual')
+      .addItem(L('Конец дня (архив + сброс)'),       'endOfDayManual');
   }
   settingsMenu.addToUi();
+
+  addLanguageMenu_(ui);
 }
 
 function setupAllTriggersWrapper() {
@@ -186,10 +188,11 @@ function updateAllWarehouseDates() {
     Object.keys(WAREHOUSE_TYPES).forEach(key => {
       const sheet = ss.getSheetByName(WAREHOUSE_SHEET_NAMES[key]);
       if (!sheet) return;
-      const newTitle = 'Данные ' + WAREHOUSE_TYPES[key].name.toLowerCase() + ' склада на ' + today;
+      const newTitle = warehouseTitle_(key, today);
       const cell = sheet.getRange(1, 1);
       if (cell.getValue().toString() !== newTitle) cell.setValue(newTitle);
     });
+    applyLanguageToWarehouseHeaders_();
   } catch(err) { Logger.log('⚠️ updateAllWarehouseDates: ' + err.toString()); }
 }
 

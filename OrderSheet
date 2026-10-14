@@ -436,7 +436,7 @@ function getArticulAndSupplier(warehouseSheet, productName) {
   const headers = data[1] || [];
   let articulIdx = -1, supplierIdx = -1;
   for (let c = 0; c < headers.length; c++) {
-    const h = headers[c] ? headers[c].toString().trim() : '';
+    const h = headers[c] ? hdrRu_(headers[c]) : '';
     if (h === 'Артикул')   articulIdx  = c;
     if (h === 'Поставщик') supplierIdx = c;
   }

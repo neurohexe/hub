@@ -645,7 +645,7 @@ function _getSimpleActiveProducts(warehouseSheet, audience) {
   var hostessColIdx = -1;
 
   for (var c = 0; c < headers.length; c++) {
-    if (headers[c] && headers[c].toString().trim() === 'Хозяюшки') { hostessColIdx = c; break; }
+    if (headers[c] && hdrRu_(headers[c]) === 'Хозяюшки') { hostessColIdx = c; break; }
   }
   for (var i = 2; i < data.length; i++) {
     var name   = data[i][0] ? data[i][0].toString().trim() : '';

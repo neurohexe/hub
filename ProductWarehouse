@@ -15,7 +15,7 @@ const ProductWarehouse = (function() {
   function findColIndex(headers, name) {
     const nameLower = name.trim().toLowerCase();
     for (let i = 0; i < headers.length; i++) {
-      if (headers[i] && headers[i].toString().trim().toLowerCase() === nameLower) return i;
+      if (headers[i] && hdrRu_(headers[i]).toLowerCase() === nameLower) return i;
     }
     return -1;
   }
