@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    .tab { display: inline-block; padding: 8px 16px; cursor: pointer; background: #eee; margin-right: 4px; border-radius: 4px 4px 0 0; }
+    .tab.active { background: #1c4587; color: white; }
+    .tab-content { display: none; margin-top: 20px; }
+    .tab-content.active { display: block; }
+    .card { border: 1px solid #ccc; padding: 12px; margin-bottom: 12px; border-radius: 6px; }
+    .row { margin-bottom: 8px; }
+    .day-btn { display: inline-block; padding: 4px 8px; margin: 2px; border: 1px solid #aaa; cursor: pointer; border-radius: 4px; background: #fff; }
+    .day-btn.selected { background: #1c4587; color: white; border-color: #1c4587; }
+    .add-btn { background: #e8f0fe; padding: 6px; text-align: center; cursor: pointer; margin-top: 8px; border-radius: 4px; }
+    .add-btn:hover { background: #d2e3fc; }
+    .footer { margin-top: 20px; text-align: right; }
+    button { padding: 6px 12px; margin-left: 8px; cursor: pointer; }
+    .item-row { margin-top: 5px; display: flex; align-items: center; gap: 8px; }
+    .item-row input, .item-row select { flex: 2; padding: 4px; }
+    .item-row button { margin: 0; }
+    .day-check { display: inline-block; margin-right: 10px; }
+    .draft-notice {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 10px;
+      min-height: 18px;
+    }
+    .draft-notice.saving { color: #1c4587; }
+    .draft-notice.saved  { color: #2e7d32; }
+    .draft-notice.error  { color: #c62828; }
+    .loading-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.8);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      color: #1c4587;
+    }
+    .loading-overlay.visible { display: flex; }
+  </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">⏳ Загрузка...</div>
+<div class="draft-notice" id="draftNotice"></div>
+
+<div>
+  <div class="tab active" onclick="showTab('rotating', event)">1️⃣ Сменные категории</div>
+  <div class="tab" onclick="showTab('timings', event)">2️⃣ Тайминги и позиции</div>
+  <div class="tab" onclick="showTab('always', event)">3️⃣ Круглосуточно</div>
+</div>
+
+<div id="rotating" class="tab-content active">
+  <div id="rotating-list"></div>
+  <div class="add-btn" onclick="addRotating()">+ Добавить категорию по выбору</div>
+</div>
+
+<div id="timings" class="tab-content">
+  <div id="timings-list"></div>
+  <div class="add-btn" onclick="addTiming()">+ Добавить новый тайминг</div>
+</div>
+
+<div id="always" class="tab-content">
+  <div id="always-list"></div>
+  <div class="add-btn" onclick="addAlways()">+ Добавить позицию</div>
+</div>
+
+<div class="footer">
+  <button onclick="google.script.host.close()">Отмена</button>
+  <button onclick="saveAndClose(false)">💾 Сохранить</button>
+  <button onclick="saveAndClose(true)">✅ Сохранить и создать меню</button>
+</div>
+
+<script>
+  const DAYS    = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+  const DAYS_SH = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+  let CATEGORIES = [];
+  let config = { rotatingCategories: [], timings: [], alwaysOn: [] };
+  let rotatingCategoryNames = [];
+  let saveTimer = null;
+
+  function setStatus(text, type) {
+    const el = document.getElementById('draftNotice');
+    el.textContent = text;
+    el.className = 'draft-notice ' + (type || '');
+  }
+
+  function scheduleSave() {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => saveDraft(), 1500);
+  }
+
+  function saveDraft() {
+    setStatus('Сохраняем...', 'saving');
+    google.script.run
+      .withSuccessHandler(() => setStatus('Черновик сохранён ✓', 'saved'))
+      .withFailureHandler(e => setStatus('Ошибка сохранения: ' + e.message, 'error'))
+      .saveMenuConfig(JSON.stringify(config));
+  }
+
+
+  function init(data) {
+    CATEGORIES = data.categories || [];
+    config = data.config || { rotatingCategories: [], timings: [], alwaysOn: [] };
+    if (!config.rotatingCategories) config.rotatingCategories = [];
+    if (!config.timings)            config.timings = [];
+    if (!config.alwaysOn)           config.alwaysOn = [];
+
+    document.getElementById('loadingOverlay').classList.remove('visible');
+
+    updateRotatingCategoryNames();
+    renderRotating();
+    renderTimings();
+    renderAlways();
+
+    setStatus('Данные загружены', 'saved');
+    setTimeout(() => setStatus(''), 2000);
+  }
+
+  function updateRotatingCategoryNames() {
+    rotatingCategoryNames = config.rotatingCategories
+      .map(rc => rc.category)
+      .filter(c => c);
+  }
+
+  function showTab(id, event) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if (event && event.target) event.target.classList.add('active');
+  }
+
+
+  function renderRotating() {
+    const container = document.getElementById('rotating-list');
+    if (!config.rotatingCategories.length) {
+      container.innerHTML = '<div style="color:#888;padding:8px;">Нет сменных категорий. Нажмите "+"</div>';
+      return;
+    }
+    container.innerHTML = config.rotatingCategories.map((rc, idx) => {
+      const daysHtml = DAYS_SH.map((d, i) =>
+        `<span class="day-btn ${rc.days && rc.days.includes(i) ? 'selected' : ''}"
+         onclick="toggleDay(${idx},${i})">${d}</span>`
+      ).join('');
+      const catOptions = CATEGORIES.map(c =>
+        `<option value="${c}" ${rc.category === c ? 'selected' : ''}>${c}</option>`
+      ).join('');
+      const mode        = rc.mode || 'weekly';
+      const countPerDay = rc.countPerDay || 1;
+      return `<div class="card">
+        <div><b>Категория ${idx+1}</b>
+          <button onclick="removeRotating(${idx})">Удалить</button>
+        </div>
+        <div class="row">Категория:
+          <select onchange="updateRotating(${idx},'category',this.value)">
+            <option value="">— выберите —</option>${catOptions}
+          </select>
+        </div>
+        <div class="row">Дни: <div>${daysHtml}</div></div>
+        <div class="row">Режим выбора:
+          <select onchange="updateRotating(${idx},'mode',this.value); renderRotating();">
+            <option value="weekly"       ${mode==='weekly'       ?'selected':''}>Один на всю неделю</option>
+            <option value="weekly_multi" ${mode==='weekly_multi' ?'selected':''}>Несколько видов на всю неделю</option>
+            <option value="daily_same"   ${mode==='daily_same'   ?'selected':''}>Каждый день разное (1 вид)</option>
+            <option value="daily_multi"  ${mode==='daily_multi'  ?'selected':''}>Каждый день несколько видов</option>
+          </select>
+        </div>
+        <div class="row">Количество видов:
+          <input type="number" min="1" max="10" value="${countPerDay}"
+           oninput="updateRotating(${idx},'countPerDay',parseInt(this.value))">
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function addRotating() {
+    config.rotatingCategories.push({ category: '', days: [0,1,2,3,4], mode: 'weekly', countPerDay: 1 });
+    updateRotatingCategoryNames();
+    renderRotating(); renderTimings(); renderAlways();
+    scheduleSave();
+  }
+
+  function removeRotating(idx) {
+    config.rotatingCategories.splice(idx, 1);
+    updateRotatingCategoryNames();
+    renderRotating(); renderTimings(); renderAlways();
+    scheduleSave();
+  }
+
+  function updateRotating(idx, field, val) {
+    config.rotatingCategories[idx][field] = val;
+    if (field === 'category') { updateRotatingCategoryNames(); renderTimings(); renderAlways(); }
+    scheduleSave();
+  }
+
+  function toggleDay(rcIdx, dayIdx) {
+    let days = config.rotatingCategories[rcIdx].days || [];
+    const pos = days.indexOf(dayIdx);
+    if (pos === -1) days.push(dayIdx); else days.splice(pos, 1);
+    
+    days.sort((a, b) => a - b);
+    config.rotatingCategories[rcIdx].days = days;
+    renderRotating();
+    scheduleSave();
+  }
+
+
+  function renderTimings() {
+    const container = document.getElementById('timings-list');
+    if (!config.timings.length) {
+      container.innerHTML = '<div style="color:#888;padding:8px;">Нет таймингов. Нажмите "+"</div>';
+      return;
+    }
+    container.innerHTML = config.timings.map((timing, idx) => {
+      const daysCheckboxes = DAYS_SH.map((d, i) => `
+        <label class="day-check">
+          <input type="checkbox"
+           ${timing.days && timing.days.includes(i) ? 'checked' : ''}
+           onchange="toggleTimingDay(${idx},${i})"> ${d}
+        </label>
+      `).join('');
+      const itemsHtml = (timing.items || []).map((item, itemIdx) => {
+        const isCategory = item.type === 'category';
+        const value      = item.value || '';
+        const selectOpts = `<option value="">-- выберите --</option>` +
+          rotatingCategoryNames.map(cat =>
+            `<option value="${cat}" ${value === cat ? 'selected' : ''}>${cat}</option>`
+          ).join('');
+        return `<div class="item-row">
+          <select onchange="updateTimingItemType(${idx},${itemIdx},this.value)">
+            <option value="text"     ${!isCategory?'selected':''}>Текст</option>
+            <option value="category" ${ isCategory?'selected':''}>Категория</option>
+          </select>
+          ${!isCategory
+            ? `<input type="text" value="${value.replace(/"/g,'&quot;')}"
+               placeholder="Введите название" style="flex:3"
+               oninput="updateTimingItemText(${idx},${itemIdx},this.value)">`
+            : `<select style="flex:3"
+               onchange="updateTimingItemCategory(${idx},${itemIdx},this.value)">${selectOpts}</select>`
+          }
+          <button onclick="removeTimingItem(${idx},${itemIdx})">✕</button>
+        </div>`;
+      }).join('');
+      return `<div class="card">
+        <div><b>Тайминг ${idx+1}</b>
+          <button onclick="removeTiming(${idx})">Удалить тайминг</button>
+        </div>
+        <div class="row">Время:
+          <input type="time" value="${timing.timeFrom||'10:00'}"
+           onchange="updateTiming(${idx},'timeFrom',this.value)">
+          →
+          <input type="time" value="${timing.timeTo||''}"
+           onchange="updateTiming(${idx},'timeTo',this.value)">
+          <span style="font-size:12px;margin-left:5px;">(если "до" не указано = "пока не съедят")</span>
+        </div>
+        <div class="row">Дни: ${daysCheckboxes}</div>
+        <div><strong>Позиции:</strong>
+          ${itemsHtml || '<div style="color:#888;font-size:12px;">Нет позиций</div>'}
+          <div class="add-btn" style="margin-top:5px"
+           onclick="addTimingItem(${idx})">+ Добавить позицию</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function addTiming() {
+    config.timings.push({ timeFrom:'10:00', timeTo:'', days:[0,1,2,3,4], items:[] });
+    renderTimings();
+    scheduleSave();
+  }
+
+  function removeTiming(idx) {
+    config.timings.splice(idx, 1);
+    renderTimings();
+    scheduleSave();
+  }
+
+  function updateTiming(idx, field, val) {
+    config.timings[idx][field] = val;
+    scheduleSave();
+  }
+
+  function toggleTimingDay(idx, dayIdx) {
+    let days = config.timings[idx].days || [];
+    const pos = days.indexOf(dayIdx);
+    if (pos === -1) days.push(dayIdx); else days.splice(pos, 1);
+    config.timings[idx].days = days;
+    renderTimings();
+    scheduleSave();
+  }
+
+  function addTimingItem(idx) {
+    if (!config.timings[idx].items) config.timings[idx].items = [];
+    config.timings[idx].items.push({ type:'text', value:'' });
+    renderTimings();
+    scheduleSave();
+  }
+
+  function removeTimingItem(idx, itemIdx) {
+    config.timings[idx].items.splice(itemIdx, 1);
+    renderTimings();
+    scheduleSave();
+  }
+
+  function updateTimingItemType(idx, itemIdx, type) {
+    config.timings[idx].items[itemIdx] = { type, value:'' };
+    renderTimings();
+    scheduleSave();
+  }
+
+  function updateTimingItemText(idx, itemIdx, text) {
+    config.timings[idx].items[itemIdx].value = text;
+    scheduleSave();
+  }
+
+  function updateTimingItemCategory(idx, itemIdx, category) {
+    config.timings[idx].items[itemIdx].value = category;
+    scheduleSave();
+  }
+
+
+  function renderAlways() {
+    const container = document.getElementById('always-list');
+    if (!config.alwaysOn.length) {
+      container.innerHTML = '<div style="color:#888;padding:8px;">Нет позиций. Нажмите "+"</div>';
+      return;
+    }
+    container.innerHTML = config.alwaysOn.map((item, idx) => {
+      const isCategory = item.type === 'category';
+      const value      = item.value || '';
+      const selectOpts = `<option value="">-- выберите --</option>` +
+        rotatingCategoryNames.map(cat =>
+          `<option value="${cat}" ${value === cat ? 'selected' : ''}>${cat}</option>`
+        ).join('');
+      return `<div class="card">
+        <div><b>Позиция ${idx+1}</b>
+          <button onclick="removeAlways(${idx})">Удалить</button>
+        </div>
+        <div class="row">
+          <select onchange="updateAlwaysType(${idx},this.value)">
+            <option value="text"     ${!isCategory?'selected':''}>Текст</option>
+            <option value="category" ${ isCategory?'selected':''}>Категория</option>
+          </select>
+          ${!isCategory
+            ? `<input type="text" value="${value.replace(/"/g,'&quot;')}"
+               placeholder="Введите название" style="width:60%"
+               oninput="updateAlwaysValue(${idx},this.value)">`
+            : `<select style="width:60%"
+               onchange="updateAlwaysValue(${idx},this.value)">${selectOpts}</select>`
+          }
+        </div>
+        <div class="row">С дня:
+          <select onchange="updateAlwaysDays(${idx},'dayFrom',this.value?parseInt(this.value):null)">
+            <option value="">не ограничено</option>
+            ${DAYS.map((d,i) =>
+              `<option value="${i}" ${item.dayFrom===i?'selected':''}>${d}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="row">По день:
+          <select onchange="updateAlwaysDays(${idx},'dayTo',this.value?parseInt(this.value):null)">
+            <option value="">не ограничено</option>
+            ${DAYS.map((d,i) =>
+              `<option value="${i}" ${item.dayTo===i?'selected':''}>${d}</option>`
+            ).join('')}
+          </select>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function addAlways() {
+    config.alwaysOn.push({ type:'text', value:'', dayFrom:null, dayTo:null });
+    renderAlways();
+    scheduleSave();
+  }
+
+  function removeAlways(idx) {
+    config.alwaysOn.splice(idx, 1);
+    renderAlways();
+    scheduleSave();
+  }
+
+  function updateAlwaysType(idx, type) {
+    config.alwaysOn[idx].type  = type;
+    config.alwaysOn[idx].value = '';
+    renderAlways();
+    scheduleSave();
+  }
+
+  function updateAlwaysValue(idx, value) {
+    config.alwaysOn[idx].value = value;
+    scheduleSave();
+  }
+
+  function updateAlwaysDays(idx, field, val) {
+    config.alwaysOn[idx][field] = val;
+    scheduleSave();
+  }
+
+
+  function saveAndClose(andGenerate) {
+    const errors = [];
+    config.rotatingCategories.forEach((rc, i) => {
+      if (!rc.category)               errors.push(`Категория ${i+1}: не выбрана`);
+      if (!rc.days || !rc.days.length) errors.push(`Категория ${i+1}: нет дней`);
+    });
+    if (errors.length) { alert('Ошибки:\n' + errors.join('\n')); return; }
+
+    setStatus('Сохраняем...', 'saving');
+    google.script.run
+      .withSuccessHandler(res => {
+        if (res.success) {
+          if (andGenerate) google.script.run.generateMenuFromConfig();
+          google.script.host.close();
+        } else {
+          alert('Ошибка: ' + res.error);
+          setStatus('Ошибка сохранения', 'error');
+        }
+      })
+      .withFailureHandler(e => {
+        alert('Ошибка: ' + e.message);
+        setStatus('Ошибка сохранения', 'error');
+      })
+      .saveMenuConfig(JSON.stringify(config));
+  }
+
+
+  document.getElementById('loadingOverlay').classList.add('visible');
+  google.script.run
+    .withSuccessHandler(init)
+    .withFailureHandler(e => {
+      document.getElementById('loadingOverlay').classList.remove('visible');
+      setStatus('Ошибка загрузки: ' + e.message, 'error');
+    })
+    .getMenuConstructorData();
+</script>
+</body>
+</html>
