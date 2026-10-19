@@ -182,7 +182,52 @@ function addLanguageMenu_(ui) {
   var en = getLang() === 'en';
   ui.createMenu(en ? '🌐 EN | ru' : '🌐 RU | en')
     .addItem(en ? 'Переключить на русский' : 'Switch to English', 'toggleLanguage')
+    .addSeparator()
+    .addItem(en ? 'Check installation' : 'Проверить установку', 'checkLanguageInstall')
     .addToUi();
+}
+
+/** Проверяет, что все файлы скрипта — новой версии (с переводом). Показывает список устаревших. */
+function checkLanguageInstall() {
+  var checks = [
+    ['AddProductButton',       function() { return AddProductButton.addNewCategory; },        'isWarehouseSheet_'],
+    ['BaseInfo',               function() { return BaseInfo.createSheet; },                    'L('],
+    ['BulkAssortmentImport',   function() { return openBulkImportDialog; },                    'htmlTemplate_'],
+    ['Config',                 function() { return getProductCategoriesList; },                'map(L)'],
+    ['DailyArchive',           function() { return _buildHeaders; },                           'L('],
+    ['DeliveryConfirmHandler', function() { return showDeliveryConfirmDialog; },               'htmlTemplate_'],
+    ['FormAttach',             function() { return updateProductsHostessForm; },               'L('],
+    ['HouseholdWarehouse',     function() { return HouseholdWarehouse.createStructure; },      'L('],
+    ['HubConfig',              function() { return chooseOfficeModeDialog; },                  'L('],
+    ['HubStockForm',           function() { return updateHubStockForm; },                      'L('],
+    ['HubTargets',             function() { return _getOrCreateHubTargetsSheet; },             'L('],
+    ['MainMenu',               function() { return onOpen; },                                  'addLanguageMenu_'],
+    ['MenuConstructor',        function() { return openMenuConstructor; },                     'htmlTemplate_'],
+    ['MenuManager',            function() { return refreshMenuAssortment; },                   'SH_('],
+    ['MenuWebApp',             function() { return doGet; },                                   'htmlTemplate_'],
+    ['OrderSheet',             function() { return updateOrderSheet; },                        'L('],
+    ['ProductWarehouse',       function() { return ProductWarehouse.startOfDay; },             'SH_('],
+    ['ProductsDashboard',      function() { return drawEmptyDashboard; },                      'L('],
+    ['SetupWarehouse',         function() { return createWarehouseSheet; },                    'L('],
+    ['SimpleWarehouseForms',   function() { return _swBuildDashboard; },                       'L('],
+    ['TelegramManager',        function() { return TelegramManager.connectChat; },             'L('],
+    ['TelegramWebhook',        function() { return sendWelcomeMessage; },                      'L(']
+  ];
+  var bad = [];
+  checks.forEach(function(c) {
+    var src = '';
+    try { var fn = c[1](); src = fn ? String(fn) : ''; } catch (e) { src = ''; }
+    if (src.indexOf(c[2]) === -1) bad.push(c[0]);
+  });
+  var lang = getLang() === 'en' ? 'English' : 'Русский';
+  var ui = SpreadsheetApp.getUi();
+  if (bad.length === 0) {
+    ui.alert('✅ Все файлы обновлены.\n\nТекущий язык: ' + lang);
+  } else {
+    ui.alert('⚠️ Эти файлы СТАРОЙ версии — замените их содержимое целиком (Ctrl+A → вставить):\n\n• ' +
+      bad.join('\n• ') + '\n\nТекущий язык: ' + lang);
+  }
+  return bad;
 }
 
 function renameSystemSheets_() {
